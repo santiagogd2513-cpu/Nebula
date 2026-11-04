@@ -92,4 +92,25 @@ if old_block in awt_source:
 elif "int viewId = v.getId();" not in awt_source:
     raise SystemExit("Expected AWTActivity switch block not found")
 
-print("Nebula sources embedded; Mojo storage bootstrap retained; launcher branded Nebula.")
+
+# Apply Nebula identity to the installed application, not only its in-app title.
+import re
+import shutil
+
+icon_source = Path("app/src/main/res/drawable/nebula_launcher_icon.xml")
+icon_target = root / "app_mojo/src/main/res/drawable/nebula_launcher_icon.xml"
+icon_target.parent.mkdir(parents=True, exist_ok=True)
+shutil.copyfile(icon_source, icon_target)
+
+manifest = root / "app_mojo/src/main/AndroidManifest.xml"
+manifest_source = manifest.read_text()
+application_match = re.search(r"<application\\b[^>]*>", manifest_source)
+if not application_match:
+    raise SystemExit("Cannot locate Mojo application manifest element")
+application_tag = application_match.group(0)
+application_tag = re.sub(r'\\s+android:icon="[^"]*"', "", application_tag)
+application_tag = re.sub(r'\\s+android:roundIcon="[^"]*"', "", application_tag)
+application_tag = application_tag[:-1] + ' android:icon="@drawable/nebula_launcher_icon" android:roundIcon="@drawable/nebula_launcher_icon">'
+manifest.write_text(manifest_source[:application_match.start()] + application_tag + manifest_source[application_match.end():])
+
+print("Nebula sources embedded; Mojo storage bootstrap retained; Nebula UI and app identity applied.")
