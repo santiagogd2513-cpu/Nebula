@@ -166,7 +166,7 @@ public final class ModrinthClient implements AutoCloseable {
             c.setInstanceFollowRedirects(false);c.setRequestProperty("Accept","application/json");
             c.setRequestProperty("User-Agent","NebulaLauncher/0.3.0 (Android)");
             int status=c.getResponseCode();
-            if(status!=HttpURLConnection.HTTP_OK)throw new IllegalStateException("Modrinth respondió HTTP "+status);
+            if(status!=HttpURLConnection.HTTP_OK)throw new IllegalStateException(httpError(status));
             StringBuilder body=new StringBuilder();
             try(BufferedReader reader=new BufferedReader(new InputStreamReader(c.getInputStream(),StandardCharsets.UTF_8))){
                 String line;while((line=reader.readLine())!=null)body.append(line);
@@ -188,6 +188,13 @@ public final class ModrinthClient implements AutoCloseable {
             }
             return new JSONArray(body.toString());
         }finally{c.disconnect();}
+    }
+
+    private String httpError(int status) {
+        if (status == HttpURLConnection.HTTP_TOO_MANY_REQUESTS) return "Modrinth está limitando las consultas. Espera un momento y vuelve a intentarlo.";
+        if (status >= 500) return "El servicio de Modrinth no está disponible temporalmente (HTTP " + status + ").";
+        if (status == HttpURLConnection.HTTP_NOT_FOUND) return "El proyecto o recurso ya no está disponible.";
+        return "Modrinth respondió HTTP " + status;
     }
 
     @Override public void close(){executor.shutdownNow();}
