@@ -185,6 +185,18 @@ jobs:
           print("Patched AWTActivity: resource IDs are compared at runtime, not used as Java case constants.")
           PY
 
+      - name: Apply Nebula interface overlay to MojoLauncher
+        run: |
+          set -euo pipefail
+          BASE=vendor/MojoLauncher/app_mojo/src/main/res
+          cp integration/nebula-ui/res/layout/fragment_launcher.xml "$BASE/layout/fragment_launcher.xml"
+          cp integration/nebula-ui/res/layout-land/fragment_launcher.xml "$BASE/layout-land/fragment_launcher.xml"
+          cp integration/nebula-ui/res/values/colors.xml "$BASE/values/colors.xml"
+          cp integration/nebula-ui/res/drawable/nebula_menu_card.xml "$BASE/drawable/nebula_menu_card.xml"
+          echo "Nebula home layouts, palette and card drawable applied."
+          grep -q 'android:text="NEBULA"' "$BASE/layout/fragment_launcher.xml"
+          grep -q 'android:text="JUGAR"' "$BASE/layout/fragment_launcher.xml"
+
       - name: Compile MojoLauncher application from Nebula root
         run: gradle --no-daemon :app_mojo:assembleFullDebug
 
