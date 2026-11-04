@@ -175,7 +175,7 @@ public final class MainActivity extends Activity {
         play.setEnabled(true);
         play.setOnClickListener(v -> openMinecraftRuntime());
         content.addView(play, match());
-        TextView runtime = text("Nebula ya incluye el motor de MJLauncher en esta misma aplicación. Desde el motor puedes instalar y ejecutar Minecraft Vanilla, Forge, Fabric y otros cargadores compatibles.", 12, MUTED, false);
+        TextView runtime = text("Nebula incluye el motor de Minecraft integrado en esta misma aplicación. Desde él puedes instalar y ejecutar Minecraft Vanilla, Forge, Fabric y otros cargadores compatibles.", 12, MUTED, false);
         LinearLayout.LayoutParams runtimeParams = match();
         runtimeParams.topMargin = dp(8);
         content.addView(runtime, runtimeParams);
