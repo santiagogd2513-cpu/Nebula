@@ -94,13 +94,19 @@ public final class MainActivity extends Activity {
 
         LinearLayout nav = new LinearLayout(this);
         nav.setGravity(Gravity.CENTER);
-        nav.setPadding(0, dp(12), 0, dp(4));
+        nav.setPadding(dp(10), dp(8), dp(10), dp(8));
+        nav.setBackgroundColor(BG);
         addNav(nav, "Inicio", this::showHome);
         addNav(nav, "Biblioteca", this::showLibrary);
         addNav(nav, "Cuentas", this::showAccounts);
         addNav(nav, "Ajustes", this::showSettings);
-        page.addView(nav);
-        setContentView(scroll);
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(BG);
+        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+        root.addView(nav, new LinearLayout.LayoutParams(-1, -2));
+        setContentView(root);
     }
 
     private void showHome() {
