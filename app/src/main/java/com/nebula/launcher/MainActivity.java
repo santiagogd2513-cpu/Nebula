@@ -19,6 +19,14 @@ import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.nebula.launcher.accounts.AccountSession;
 import com.nebula.launcher.accounts.LocalAccountProvider;
@@ -43,6 +51,9 @@ public final class MainActivity extends Activity {
     private static final String KEY_LOADER = "minecraft_loader";
     private static final String KEY_LOCAL_NAMES = "local_account_names";
     private static final String KEY_ACTIVE_NAME = "active_local_account";
+    private static final String KEY_INSTALL_VERSION = "install_minecraft_version";
+    private static final String KEY_INSTALL_TYPE = "install_profile_type";
+    private final ExecutorService versionExecutor = Executors.newSingleThreadExecutor();
 
     private LinearLayout content;
     private final ModrinthClient modrinth = new ModrinthClient();
@@ -62,6 +73,7 @@ public final class MainActivity extends Activity {
     @Override protected void onDestroy() {
         modrinth.close();
         imageLoader.close();
+        versionExecutor.shutdownNow();
         super.onDestroy();
     }
 
@@ -97,6 +109,7 @@ public final class MainActivity extends Activity {
         nav.setPadding(dp(10), dp(8), dp(10), dp(8));
         nav.setBackgroundColor(BG);
         addNav(nav, "Inicio", this::showHome);
+        addNav(nav, "Instalar", this::showInstallations);
         addNav(nav, "Biblioteca", this::showLibrary);
         addNav(nav, "Cuentas", this::showAccounts);
         addNav(nav, "Ajustes", this::showSettings);
@@ -125,6 +138,151 @@ public final class MainActivity extends Activity {
         card("Perfil seleccionado", activeName.isEmpty() ? "Todavía no has seleccionado un perfil local." : activeName + " · Perfil local sin autenticación en línea.");
         card("Cuentas", "Puedes crear, seleccionar y conservar perfiles locales sin conexión. El acceso Microsoft y Ely.by sigue pendiente.");
         card("Tu configuración", "Minecraft " + selectedVersion() + " · " + selectedLoaderLabel());
+    }
+
+    private void showInstallations() {
+        base("Instalar Minecraft");
+        card("Versiones oficiales", "Nebula consulta el manifiesto público de Mojang para mostrar versiones reales de Minecraft Java. Selecciona una versión y el tipo de instalación que quieres preparar.");
+
+        TextView versionLabel = text("Versión de Minecraft", 16, TEXT, true);
+        content.addView(versionLabel, match());
+        Spinner versions = new Spinner(this);
+        versions.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
+                new String[]{"Cargando versiones oficiales…"}));
+        LinearLayout.LayoutParams versionParams = match();
+        versionParams.topMargin = dp(8);
+        content.addView(versions, versionParams);
+
+        TextView optiLabel = text("Gráficos y rendimiento", 17, TEXT, true);
+        LinearLayout.LayoutParams optiLabelParams = match();
+        optiLabelParams.topMargin = dp(20);
+        content.addView(optiLabel, optiLabelParams);
+        Button optifine = button("OptiFine");
+        content.addView(optifine, match());
+        optifine.setOnClickListener(v -> selectInstallType("optifine", "OptiFine"));
+
+        Button vanilla = button("Vanilla · Minecraft original");
+        LinearLayout.LayoutParams vanillaParams = match();
+        vanillaParams.topMargin = dp(8);
+        content.addView(vanilla, vanillaParams);
+        vanilla.setOnClickListener(v -> selectInstallType("vanilla", "Vanilla"));
+
+        TextView loaderHeading = text("Cargador de mods", 19, TEXT, true);
+        LinearLayout.LayoutParams loaderHeadingParams = match();
+        loaderHeadingParams.topMargin = dp(22);
+        content.addView(loaderHeading, loaderHeadingParams);
+        content.addView(text("Instalaciones separadas para mods. El orden sigue tu preferencia.", 12, MUTED, false), match());
+
+        String[] loaderNames = {"Forge", "Fabric", "NeoForge", "Quilt"};
+        String[] loaderKeys = {"forge", "fabric", "neoforge", "quilt"};
+        for (int i = 0; i < loaderNames.length; i++) {
+            final String key = loaderKeys[i];
+            Button loaderButton = button(loaderNames[i]);
+            LinearLayout.LayoutParams loaderParams = match();
+            loaderParams.topMargin = dp(8);
+            content.addView(loaderButton, loaderParams);
+            loaderButton.setOnClickListener(v -> selectInstallType(key, loaderNames[loaderKeysIndex(key, loaderKeys, loaderNames)]));
+        }
+
+        TextView selected = text("Selecciona una edición para ver el resumen.", 13, BLUE, true);
+        LinearLayout.LayoutParams selectedParams = match();
+        selectedParams.topMargin = dp(18);
+        content.addView(selected, selectedParams);
+        Button prepare = button("Preparar instalación");
+        prepare.setEnabled(false);
+        LinearLayout.LayoutParams prepareParams = match();
+        prepareParams.topMargin = dp(10);
+        content.addView(prepare, prepareParams);
+        content.addView(text("La descarga e instalación completa aún no están habilitadas: falta integrar MojoLauncher y el instalador de perfiles. Esta pantalla no descargará archivos incompletos ni afirmará que Minecraft está instalado.", 12, MUTED, false), match());
+
+        final String[] selectedVersion = {preferences.getString(KEY_INSTALL_VERSION, "1.20.1")};
+        final String[] selectedType = {preferences.getString(KEY_INSTALL_TYPE, "vanilla")};
+        prepare.setOnClickListener(v -> {
+            String version = versions.getSelectedItem() == null ? selectedVersion[0] : versions.getSelectedItem().toString();
+            preferences.edit().putString(KEY_INSTALL_VERSION, version).putString(KEY_INSTALL_TYPE, selectedType[0]).apply();
+            selected.setText("Selección guardada: Minecraft " + version + " · " + selectedType[0]);
+            Toast.makeText(this, "Selección de instalación guardada.", Toast.LENGTH_SHORT).show();
+        });
+        Runnable updateSelection = () -> {
+            String version = versions.getSelectedItem() == null ? selectedVersion[0] : versions.getSelectedItem().toString();
+            selected.setText("Seleccionado: Minecraft " + version + " · " + selectedType[0]);
+            prepare.setEnabled(versions.getAdapter() != null && versions.getAdapter().getCount() > 0
+                    && versions.getSelectedItem() != null);
+        };
+        versions.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                if (parent.getItemAtPosition(position) != null) {
+                    selectedVersion[0] = parent.getItemAtPosition(position).toString();
+                    updateSelection.run();
+                }
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { prepare.setEnabled(false); }
+        });
+        // Restore the saved type visually in the summary; the user can change it with any option above.
+        selected.setText("Seleccionado: Minecraft " + selectedVersion[0] + " · " + selectedType[0]);
+        fetchMinecraftVersions(versions, selectedVersion, updateSelection);
+    }
+
+    private int loaderKeysIndex(String key, String[] keys, String[] labels) {
+        for (int i = 0; i < keys.length; i++) if (keys[i].equals(key)) return i;
+        return 0;
+    }
+
+    private void selectInstallType(String type, String label) {
+        preferences.edit().putString(KEY_INSTALL_TYPE, type).apply();
+        Toast.makeText(this, label + " seleccionado. El instalador completo está pendiente de integrar.", Toast.LENGTH_SHORT).show();
+    }
+
+    private void fetchMinecraftVersions(Spinner spinner, String[] selectedVersion, Runnable onLoaded) {
+        final int token = screenGeneration;
+        versionExecutor.execute(() -> {
+            HttpURLConnection connection = null;
+            try {
+                connection = (HttpURLConnection) new URL("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json").openConnection();
+                connection.setConnectTimeout(10000);
+                connection.setReadTimeout(15000);
+                connection.setRequestProperty("Accept", "application/json");
+                int status = connection.getResponseCode();
+                if (status != 200) throw new java.io.IOException("HTTP " + status);
+                StringBuilder body = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (body.length() + line.length() > 2_000_000) throw new java.io.IOException("El manifiesto es demasiado grande");
+                        body.append(line);
+                    }
+                }
+                JSONObject manifest = new JSONObject(body.toString());
+                JSONArray entries = manifest.getJSONArray("versions");
+                ArrayList<String> ids = new ArrayList<>();
+                for (int i = 0; i < entries.length(); i++) {
+                    JSONObject item = entries.getJSONObject(i);
+                    if ("release".equals(item.optString("type"))) ids.add(item.getString("id"));
+                }
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed() || token != screenGeneration) return;
+                    if (ids.isEmpty()) {
+                        spinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
+                                new String[]{"No hay versiones disponibles"}));
+                        return;
+                    }
+                    ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, ids);
+                    spinner.setAdapter(adapter);
+                    int restore = ids.indexOf(selectedVersion[0]);
+                    if (restore >= 0) spinner.setSelection(restore);
+                    onLoaded.run();
+                });
+            } catch (Exception error) {
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed() || token != screenGeneration) return;
+                    spinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
+                            new String[]{"No se pudieron cargar las versiones"}));
+                    Toast.makeText(this, "No se pudo consultar el manifiesto de Mojang.", Toast.LENGTH_LONG).show();
+                });
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        });
     }
 
     private void showLibrary() {
