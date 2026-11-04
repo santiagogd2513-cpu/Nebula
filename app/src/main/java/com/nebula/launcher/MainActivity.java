@@ -123,14 +123,32 @@ public final class MainActivity extends Activity {
         setContentView(root);
     }
 
+    private void openMinecraftRuntime() {
+        String[] packages = {"git.artdeell.mjlaunch.debug", "git.artdeell.mjlaunch"};
+        for (String packageName : packages) {
+            Intent launch = getPackageManager().getLaunchIntentForPackage(packageName);
+            if (launch != null) {
+                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(launch);
+                return;
+            }
+        }
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Falta instalar el motor de Minecraft")
+                .setMessage("Nebula necesita el APK completo de MojoLauncher para ejecutar Minecraft. Descarga e instala el artefacto “mojolauncher-full-debug-apk” de esta misma compilación y vuelve aquí.")
+                .setPositiveButton("Entendido", null)
+                .show();
+    }
+
     private void showHome() {
         base("Inicio");
         card("Bienvenido a Nebula",
                 "Tu espacio para preparar Minecraft Java en Android. La interfaz, el catálogo y los perfiles locales ya tienen funciones iniciales.");
-        Button play = button("Jugar");
-        play.setEnabled(false);
+        Button play = button("Abrir motor de Minecraft");
+        play.setEnabled(true);
+        play.setOnClickListener(v -> openMinecraftRuntime());
         content.addView(play, match());
-        TextView runtime = text("El motor de MojoLauncher todavía no está integrado. Jugar seguirá desactivado hasta que el runtime real esté incorporado y probado.", 12, MUTED, false);
+        TextView runtime = text("Para ejecutar Minecraft, Nebula abre el motor completo de MojoLauncher como componente independiente. Instala también el APK de MojoLauncher Full que acompaña esta compilación; desde allí podrás instalar Minecraft Vanilla 1.20.1 y lanzarlo.", 12, MUTED, false);
         LinearLayout.LayoutParams runtimeParams = match();
         runtimeParams.topMargin = dp(8);
         content.addView(runtime, runtimeParams);
