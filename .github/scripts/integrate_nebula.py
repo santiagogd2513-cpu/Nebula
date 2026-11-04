@@ -181,7 +181,7 @@ shortcut = '''
             android:title="@string/nebula_optimization_title"
             android:summary="@string/nebula_optimization_summary"
             android:fragment="git.artdeell.mojo.prefs.screens.LauncherPreferenceVideoFragment"
-            android:icon="@drawable/ic_px_gauge"/>
+            android:icon="@drawable/ic_px_speed"/>
 '''
 if "nebula_optimization_shortcut" not in pref_source:
     anchor = '<PreferenceCategory\n        android:title="@string/preference_category_main_categories"'
