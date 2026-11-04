@@ -223,8 +223,11 @@ public final class MainActivity extends Activity {
             info.addView(text("Dependencias",18,TEXT,true));
             if(details.dependencies.isEmpty())info.addView(text("No requiere dependencias declaradas.",13,MUTED,false));
             else for(ModrinthClient.Dependency dep:details.dependencies){
-                String requirement=dep.isRequired()?"Obligatoria":"Opcional";
-                info.addView(text("• "+(dep.title.isEmpty()?dep.projectId:dep.title)+" · "+requirement,13,MUTED,false));
+                String requirement=dep.isRequired()?"Obligatoria":("optional".equals(dep.type)?"Opcional":dep.type);
+                String dependencyName=!dep.title.isEmpty()?dep.title:
+                        (!dep.projectId.isEmpty()?dep.projectId:
+                        (!dep.versionId.isEmpty()?"Versión específica ("+dep.versionId+")":"Dependencia declarada"));
+                info.addView(text("• "+dependencyName+" · "+requirement,13,MUTED,false));
             }
             if(!details.body.trim().isEmpty()){
                 bodySection.addView(text("Información del proyecto",18,TEXT,true));

@@ -32,7 +32,7 @@ public final class ModrinthClient implements AutoCloseable {
             slug = json.optString("slug", "");
             title = json.optString("title", json.optString("name", "Proyecto sin nombre"));
             description = json.optString("description", "");
-            projectType = json.optString("project_type", json.optString("project_type", ""));
+            projectType = json.optString("project_type", "");
             iconUrl = json.optString("icon_url", "");
             author = json.optString("author", "");
             downloads = Math.max(0L, json.optLong("downloads", 0L));
@@ -102,6 +102,8 @@ public final class ModrinthClient implements AutoCloseable {
                 throw new IllegalArgumentException("Tipo de contenido no válido");
             if (!CompatibilityFilter.isSupportedVersion(gameVersion)) throw new IllegalArgumentException("Versión de Minecraft no válida");
             if (!CompatibilityFilter.isSupportedLoader(loader)) throw new IllegalArgumentException("Cargador no válido");
+            if (query != null && query.length() > 200) throw new IllegalArgumentException("La búsqueda no puede superar 200 caracteres");
+            if (offset < 0 || offset > 10000) throw new IllegalArgumentException("Página del catálogo fuera de rango");
             JSONArray facets=new JSONArray();
             facets.put(new JSONArray().put("project_type:"+projectType));
             facets.put(new JSONArray().put("versions:"+gameVersion));
