@@ -189,6 +189,7 @@ public final class MainActivity extends Activity {
         item.setPadding(dp(12),dp(12),dp(12),dp(12));
         GradientDrawable bg=new GradientDrawable();bg.setColor(PANEL);bg.setCornerRadius(dp(16));bg.setStroke(dp(1),Color.rgb(34,58,101));item.setBackground(bg);
         ImageView icon=new ImageView(this);icon.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        icon.setContentDescription(project.title + " icon");
         LinearLayout.LayoutParams iconParams=new LinearLayout.LayoutParams(dp(64),dp(64));iconParams.rightMargin=dp(12);item.addView(icon,iconParams);
         imageLoader.load(project.iconUrl,icon,Color.rgb(28,43,72));
         LinearLayout details=new LinearLayout(this);details.setOrientation(LinearLayout.VERTICAL);
@@ -198,7 +199,9 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams descParams=match();descParams.topMargin=dp(4);details.addView(desc,descParams);
         TextView meta=text(formatDownloads(project.downloads)+" descargas · "+project.projectType,11,BLUE,false);
         LinearLayout.LayoutParams metaParams=match();metaParams.topMargin=dp(6);details.addView(meta,metaParams);
-        item.setClickable(true);item.setFocusable(true);item.setOnClickListener(v->showProjectDetails(project));
+        item.setClickable(true);item.setFocusable(true);
+        item.setContentDescription("Abrir ficha de " + project.title + ". " + project.description);
+        item.setOnClickListener(v->showProjectDetails(project));
         LinearLayout.LayoutParams itemParams=match();itemParams.bottomMargin=dp(9);results.addView(item,itemParams);
     }
 
@@ -211,6 +214,7 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams heroParams=match();heroParams.topMargin=dp(16);content.addView(hero,heroParams);
         if(project.iconUrl!=null&&!project.iconUrl.isEmpty()){
             ImageView icon=new ImageView(this);icon.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            icon.setContentDescription("Icono de " + project.title);
             hero.addView(icon,new LinearLayout.LayoutParams(dp(92),dp(92)));imageLoader.load(project.iconUrl,icon,Color.rgb(28,43,72));
         }
         LinearLayout heading=new LinearLayout(this);heading.setOrientation(LinearLayout.VERTICAL);
@@ -253,6 +257,7 @@ public final class MainActivity extends Activity {
                 gallery.addView(text("Imágenes del proyecto",18,TEXT,true));
                 for(ModrinthClient.GalleryImage image:details.gallery){
                     ImageView picture=new ImageView(this);picture.setAdjustViewBounds(true);picture.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                    picture.setContentDescription(image.title.isEmpty() ? "Imagen de " + project.title : image.title);
                     LinearLayout.LayoutParams p=match();p.topMargin=dp(10);gallery.addView(picture,p);
                     imageLoader.load(image.url,picture,Color.rgb(18,29,52));
                     if(image.featured)gallery.addView(text("Imagen destacada",11,BLUE,true));
