@@ -7,6 +7,7 @@ Nebula is an Android launcher project for the planned Minecraft: Java Edition ru
 The Android app currently includes:
 
 - A dark blue launcher interface with Inicio, Biblioteca, Cuentas, and Ajustes.
+- A dedicated Instalar screen that queries Mojang's official version manifest and lets users select OptiFine, Vanilla, Forge, Fabric, NeoForge, or Quilt in the requested order.
 - Modrinth v2 search for mods, modpacks, shaders, and resource packs.
 - Minecraft version and loader preferences saved on-device.
 - Loader-aware catalog filtering (Forge/Fabric/Quilt/NeoForge applies to mods and modpacks; shaders and resource packs do not receive a loader facet).
@@ -18,7 +19,7 @@ The Android app currently includes:
 
 ## Important limitations
 
-This milestone does **not** yet launch Minecraft. The MojoLauncher runtime and native dependencies have not been imported, so Jugar remains disabled. Microsoft and Ely.by authentication are not implemented. Modrinth search is metadata-only: automatic downloads, dependency resolution, file verification, and installation are not enabled. CurseForge is not connected.
+The Instalar screen currently selects and saves a version/profile only; it does not yet download or install the full game. This milestone does **not** yet launch Minecraft. The MojoLauncher runtime and native dependencies have not been imported, so Jugar remains disabled. Microsoft and Ely.by authentication are not implemented. Modrinth search is metadata-only: automatic downloads, dependency resolution, file verification, and installation are not enabled. CurseForge is not connected.
 
 ## Target
 
