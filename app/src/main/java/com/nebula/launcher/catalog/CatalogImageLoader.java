@@ -21,18 +21,19 @@ public final class CatalogImageLoader implements AutoCloseable {
     private final ThreadPoolExecutor executor;
 
     public CatalogImageLoader() {
-        int cacheBytes = (int) (Runtime.getRuntime().maxMemory() / 16L);
+        int cacheBytes = (int) Math.min(24L * 1024L * 1024L,
+                Math.max(2L * 1024L * 1024L, Runtime.getRuntime().maxMemory() / 24L));
         cache = new LruCache<String, Bitmap>(Math.max(1024 * 1024, cacheBytes)) {
             @Override protected int sizeOf(String key, Bitmap value) {
                 return value.getByteCount();
             }
         };
         executor = new ThreadPoolExecutor(2, 3, 30, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(48), runnable -> {
+                new ArrayBlockingQueue<>(32), runnable -> {
                     Thread thread = new Thread(runnable, "Nebula-Images");
                     thread.setDaemon(true);
                     return thread;
-                }, new ThreadPoolExecutor.DiscardOldestPolicy());
+                }, new ThreadPoolExecutor.AbortPolicy());
     }
 
     public void load(String address, ImageView target, int placeholderColor) {
@@ -51,7 +52,7 @@ public final class CatalogImageLoader implements AutoCloseable {
         }
         try {
             executor.execute(() -> {
-                Bitmap bitmap = downloadAndDecode(address, target.getWidth(), target.getHeight());
+                Bitmap bitmap = downloadAndDecode(address, requestedSize(target, true), requestedSize(target, false));
                 if (bitmap == null) return;
                 cache.put(address, bitmap);
                 target.post(() -> {
@@ -65,12 +66,22 @@ public final class CatalogImageLoader implements AutoCloseable {
         }
     }
 
+    private int requestedSize(ImageView target, boolean width) {
+        int measured = width ? target.getWidth() : target.getHeight();
+        if (measured > 0) return measured;
+        android.view.ViewGroup.LayoutParams params = target.getLayoutParams();
+        int requested = params == null ? 0 : (width ? params.width : params.height);
+        if (requested > 0) return requested;
+        return 192;
+    }
+
     private boolean isTrustedImageUrl(String address) {
         if (address == null || address.length() > 2048) return false;
         try {
             Uri uri = Uri.parse(address);
             String host = uri.getHost();
             return "https".equalsIgnoreCase(uri.getScheme()) && host != null
+                    && uri.getUserInfo() == null && (uri.getPort() == -1 || uri.getPort() == 443)
                     && (host.equalsIgnoreCase("modrinth.com") || host.toLowerCase(java.util.Locale.ROOT).endsWith(".modrinth.com"));
         } catch (RuntimeException ignored) {
             return false;
@@ -86,7 +97,7 @@ public final class CatalogImageLoader implements AutoCloseable {
             connection.setInstanceFollowRedirects(false);
             connection.setRequestMethod("GET");
             connection.setRequestProperty("Accept", "image/*");
-            connection.setRequestProperty("User-Agent", "NebulaLauncher/0.3.1 (Android)");
+            connection.setRequestProperty("User-Agent", "NebulaLauncher/0.3.2 (Android)");
             if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) return null;
             int length = connection.getContentLength();
             if (length > MAX_IMAGE_BYTES) return null;

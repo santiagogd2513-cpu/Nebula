@@ -1,22 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
-    <application
-        android:allowBackup="false"
-        android:label="Nebula"
-        android:icon="@drawable/nebula_launcher_foreground"
-        android:roundIcon="@drawable/nebula_launcher_foreground"
-        android:theme="@android:style/Theme.Material.NoActionBar"
-        android:usesCleartextTraffic="false"
-        android:supportsRtl="true">
+    <application android:supportsRtl="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:windowSoftInputMode="adjustResize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:windowSoftInputMode="adjustResize" />
     </application>
 </manifest>

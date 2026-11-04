@@ -9,6 +9,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.widget.PopupMenu;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -33,6 +34,7 @@ import com.nebula.launcher.accounts.LocalAccountProvider;
 import com.nebula.launcher.accounts.LocalProfileNames;
 import com.nebula.launcher.catalog.ModrinthClient;
 import com.nebula.launcher.catalog.CatalogImageLoader;
+import com.nebula.launcher.catalog.NebulaModInstaller;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -67,7 +69,6 @@ public final class MainActivity extends Activity {
         preferences = getSharedPreferences(PREFS, MODE_PRIVATE);
         getWindow().setStatusBarColor(BG);
         getWindow().setNavigationBarColor(BG);
-        getWindow().getDecorView().setSystemUiVisibility(0);
         showHome();
     }
 
@@ -89,9 +90,57 @@ public final class MainActivity extends Activity {
         page.setPadding(dp(22), dp(24), dp(22), dp(22));
         scroll.addView(page);
 
-        TextView brand = text("NEBULA", 13, BLUE, true);
+        LinearLayout topBar = new LinearLayout(this);
+        topBar.setGravity(Gravity.CENTER_VERTICAL);
+        topBar.setOrientation(LinearLayout.HORIZONTAL);
+
+        Button menuButton = button("☰");
+        menuButton.setTextSize(22);
+        menuButton.setContentDescription("Abrir navegación");
+        menuButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(PANEL));
+        topBar.addView(menuButton, new LinearLayout.LayoutParams(dp(52), dp(48)));
+        menuButton.setOnClickListener(v -> {
+            PopupMenu menu = new PopupMenu(this, menuButton);
+            menu.getMenu().add("Inicio").setOnMenuItemClickListener(item -> { showHome(); return true; });
+            menu.getMenu().add("Instalar Minecraft").setOnMenuItemClickListener(item -> { showInstallations(); return true; });
+            menu.getMenu().add("Biblioteca").setOnMenuItemClickListener(item -> { showLibrary(); return true; });
+            menu.getMenu().add("Ajustes").setOnMenuItemClickListener(item -> { showSettings(); return true; });
+            menu.show();
+        });
+
+        TextView brand = text("NEBULA", 14, BLUE, true);
         brand.setLetterSpacing(.18f);
-        page.addView(brand);
+        LinearLayout.LayoutParams brandParams = new LinearLayout.LayoutParams(0, -2, 1);
+        brandParams.leftMargin = dp(12);
+        topBar.addView(brand, brandParams);
+
+        String activeAccount = preferences.getString(KEY_ACTIVE_NAME, "");
+        Button accountButton = button(activeAccount.isEmpty() ? "●" : activeAccount.substring(0, 1).toUpperCase(java.util.Locale.ROOT));
+        accountButton.setTextSize(18);
+        accountButton.setContentDescription("Cuentas y perfiles");
+        accountButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(PANEL));
+        topBar.addView(accountButton, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        accountButton.setOnClickListener(v -> {
+            PopupMenu accounts = new PopupMenu(this, accountButton);
+            Set<String> saved = LocalProfileNames.sanitize(preferences.getStringSet(KEY_LOCAL_NAMES, Collections.emptySet()));
+            List<String> sorted = new ArrayList<>(saved);
+            Collections.sort(sorted, String.CASE_INSENSITIVE_ORDER);
+            if (sorted.isEmpty()) {
+                accounts.getMenu().add("Sin cuentas guardadas").setEnabled(false);
+            } else {
+                for (String name : sorted) {
+                    accounts.getMenu().add(name).setOnMenuItemClickListener(item -> {
+                        preferences.edit().putString(KEY_ACTIVE_NAME, name).apply();
+                        showHome();
+                        return true;
+                    });
+                }
+            }
+            accounts.getMenu().add("＋ Crear cuenta").setOnMenuItemClickListener(item -> { showCreateAccountMenu(); return true; });
+            accounts.getMenu().add("Administrar cuentas").setOnMenuItemClickListener(item -> { showAccounts(); return true; });
+            accounts.show();
+        });
+        page.addView(topBar);
 
         TextView title = text(section, 30, TEXT, true);
         LinearLayout.LayoutParams titleParams = match();
@@ -105,32 +154,29 @@ public final class MainActivity extends Activity {
         contentParams.topMargin = dp(24);
         page.addView(content, contentParams);
 
-        LinearLayout nav = new LinearLayout(this);
-        nav.setGravity(Gravity.CENTER);
-        nav.setPadding(dp(10), dp(8), dp(10), dp(8));
-        nav.setBackgroundColor(BG);
-        addNav(nav, "Inicio", this::showHome);
-        addNav(nav, "Instalar", this::showInstallations);
-        addNav(nav, "Biblioteca", this::showLibrary);
-        addNav(nav, "Cuentas", this::showAccounts);
-        addNav(nav, "Ajustes", this::showSettings);
-
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(BG);
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
-        root.addView(nav, new LinearLayout.LayoutParams(-1, -2));
         setContentView(root);
+    }
+
+    private void openMinecraftRuntime() {
+        // The Mojo runtime is embedded in this same APK; never launch a second package.
+        Intent runtimeIntent = new Intent();
+        runtimeIntent.setClassName(this, "git.artdeell.mojo.LauncherActivity");
+        startActivity(runtimeIntent);
     }
 
     private void showHome() {
         base("Inicio");
         card("Bienvenido a Nebula",
                 "Tu espacio para preparar Minecraft Java en Android. La interfaz, el catálogo y los perfiles locales ya tienen funciones iniciales.");
-        Button play = button("Jugar");
-        play.setEnabled(false);
+        Button play = button("Entrar a Minecraft");
+        play.setEnabled(true);
+        play.setOnClickListener(v -> openMinecraftRuntime());
         content.addView(play, match());
-        TextView runtime = text("El motor de MojoLauncher todavía no está integrado. Jugar seguirá desactivado hasta que el runtime real esté incorporado y probado.", 12, MUTED, false);
+        TextView runtime = text("Nebula incluye el motor de Minecraft integrado en esta misma aplicación. Desde él puedes instalar y ejecutar Minecraft Vanilla, Forge, Fabric y otros cargadores compatibles.", 12, MUTED, false);
         LinearLayout.LayoutParams runtimeParams = match();
         runtimeParams.topMargin = dp(8);
         content.addView(runtime, runtimeParams);
@@ -194,15 +240,16 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams prepareParams = match();
         prepareParams.topMargin = dp(10);
         content.addView(prepare, prepareParams);
-        content.addView(text("La descarga e instalación completa aún no están habilitadas: falta integrar MojoLauncher y el instalador de perfiles. Esta pantalla no descargará archivos incompletos ni afirmará que Minecraft está instalado.", 12, MUTED, false), match());
+        content.addView(text("La selección queda guardada en Nebula. El motor integrado administra la instalación y el lanzamiento de Minecraft y sus cargadores compatibles.", 12, MUTED, false), match());
 
         final String[] selectedVersion = {preferences.getString(KEY_INSTALL_VERSION, "1.20.1")};
         pendingInstallType = preferences.getString(KEY_INSTALL_TYPE, "vanilla");
         prepare.setOnClickListener(v -> {
             String version = versions.getSelectedItem() == null ? selectedVersion[0] : versions.getSelectedItem().toString();
             preferences.edit().putString(KEY_INSTALL_VERSION, version).putString(KEY_INSTALL_TYPE, pendingInstallType).apply();
-            selected.setText("Selección guardada: Minecraft " + version + " · " + pendingInstallType);
-            Toast.makeText(this, "Selección de instalación guardada.", Toast.LENGTH_SHORT).show();
+            selected.setText("Selección guardada: Minecraft " + version + " · " + pendingInstallType
+                    + ". Abre el motor integrado para completar la instalación.");
+            openMinecraftRuntime();
         });
         Runnable updateSelection = () -> {
             String version = versions.getSelectedItem() == null ? selectedVersion[0] : versions.getSelectedItem().toString();
@@ -232,7 +279,7 @@ public final class MainActivity extends Activity {
     private void selectInstallType(String type, String label) {
         pendingInstallType = type;
         preferences.edit().putString(KEY_INSTALL_TYPE, type).apply();
-        Toast.makeText(this, label + " seleccionado. El instalador completo está pendiente de integrar.", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, label + " seleccionado. Pulsa Preparar instalación para continuar en el motor integrado.", Toast.LENGTH_SHORT).show();
     }
 
     private void fetchMinecraftVersions(Spinner spinner, String[] selectedVersion, Runnable onLoaded) {
@@ -433,8 +480,18 @@ public final class MainActivity extends Activity {
                 }
             }
         }));
-        Button official=button("Abrir página oficial de Modrinth ↗");
-        LinearLayout.LayoutParams officialParams=match();officialParams.topMargin=dp(12);content.addView(official,officialParams);
+        Button install=button("⬇ Instalar en Minecraft");
+        LinearLayout.LayoutParams installParams=match();installParams.topMargin=dp(12);content.addView(install,installParams);
+        install.setOnClickListener(v -> {
+            String loader = preferences.getString(KEY_LOADER, "forge");
+            if ("any".equals(loader)) {
+                Toast.makeText(this, "Selecciona un cargador concreto en Ajustes para instalar este mod.", Toast.LENGTH_LONG).show();
+                return;
+            }
+            NebulaModInstaller.install(this, project.id, selectedVersion(), loader);
+        });
+        Button official=button("Ver página del proyecto ↗");
+        LinearLayout.LayoutParams officialParams=match();officialParams.topMargin=dp(8);content.addView(official,officialParams);
         official.setOnClickListener(v->openProject(project.slug));
     }
 

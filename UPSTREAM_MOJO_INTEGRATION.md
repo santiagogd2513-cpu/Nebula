@@ -1,20 +1,48 @@
-# Upstream runtime integration — Phase 2
+# MojoLauncher runtime integration
 
-Nebula's Android UI and runtime are separate modules by design. The upstream project selected for integration is [MojoLauncher](https://github.com/MojoLauncher/MojoLauncher), branch `v3_openjdk`. The branch was inspected at commit `417bc82cc3d505e6ade6901040ffd4238af2df45` (tree `09f3b6fb57c296371de6b456ab1d93a4751898c2`). Treat this as an audit reference, not an imported runtime.
+## Imported upstream source
 
-## Verified upstream layout
+Nebula now includes the upstream project as a pinned Git submodule:
 
-The upstream project is not a small Android library. Its Gradle build includes the `app_mojo` application module, `forge_installer`, `NoBlocklist`, and JNI binding modules for GLFW, SDL, and mojoexec. Those native projects are supplied as Git submodules. At the audited revision, the submodule pins are `NoBlocklist` `f4209d4755d6af6a19fedbe578313e29ebfc45ff`, `glfw` `7900e19fd2dbcad5abb4affc3b9d56c27e164c59`, `mojoexec` `27790c525c3f572d9611bfa05c532014be367ca0`, and `sdl` `b81efe99684acc5ec7e0ed94d941ac8e1c89bd42`. Its build instructions invoke `./gradlew :app_mojo:assembleDebug`.
+- Path: `vendor/MojoLauncher`
+- Repository: https://github.com/MojoLauncher/MojoLauncher
+- Branch: `v3_openjdk`
+- Commit: `417bc82cc3d505e6ade6901040ffd4238af2df45`
+- Tree: `09f3b6fb57c296371de6b456ab1d93a4751898c2`
 
-## Integration rules
+The upstream Gradle build contains the `app_mojo` application, `forge_installer`, `NoBlocklist`, and JNI binding modules for GLFW, SDL, and mojoexec. It also declares native Git submodules. Checkout must therefore use recursive submodules.
 
-1. Import the upstream source and all required Git submodules at a pinned commit; do not copy only the Java application folder.
-2. Preserve the LGPL-3.0 license, copyright notices, source-offer obligations, and each third-party component's license.
-3. Keep upstream authentication and game-runtime code as the runtime implementation; Nebula should call it through a small adapter rather than duplicating launch internals.
-4. Audit authentication logging before enabling any account flow. Tokens, authorization codes, and PKCE verifiers must never be logged.
-5. Keep CurseForge credentials out of the APK. Any required key belongs in a protected service, not a client resource or BuildConfig constant.
-6. Align Android Gradle Plugin, compile SDK, NDK, Java level, and native build configuration with the pinned upstream revision before attempting a build.
+## What this milestone changes
 
-## Current status
+- Adds the upstream repository as a Git submodule at a fixed commit.
+- Preserves the upstream repository's own license and third-party notices in that checkout.
+- Adds an independent CI smoke build for `:app_mojo:assembleDebug`.
 
-The `GameRuntime` contract and a fail-closed `MojoRuntimeAdapter` are present in Nebula. The upstream reference commit and all four gitlink revisions have now been recorded for a reproducible future import. The actual upstream runtime, native submodules, and game-launch implementation are **not yet imported**. The adapter intentionally refuses to launch instead of pretending the game is available.
+## What is not integrated yet
+
+Nebula remains a separate Android application. Its `MojoRuntimeAdapter` intentionally fails closed and does not launch the game. Minecraft version selection still does not download the game, and no Forge profile is installed. A successful upstream smoke build proves that the vendored engine compiles; it does not prove that Nebula can invoke it.
+
+## Required next integration work
+
+1. Run and fix the upstream smoke build with all recursive submodules.
+2. Choose the app merge strategy: migrate Nebula screens into the Mojo application module, or refactor Mojo's application module into a library while preserving its application-level services, providers, activities, manifest placeholders, resources, and native packaging.
+3. Wire Nebula's install-profile model to the real upstream version installer and Forge installer.
+4. Wire account sessions without logging credentials or authorization material.
+5. Connect the Play action to the real game activity and add device-level smoke testing.
+6. Verify Minecraft 1.20.1 Vanilla first, then Forge 1.20.1, before enabling the button in production UI.
+
+## Upstream build reference
+
+The upstream README documents:
+
+```bash
+git submodule update --init --recursive
+cd vendor/MojoLauncher
+./gradlew :app_mojo:assembleDebug
+```
+
+The upstream README states that MojoLauncher supports Minecraft Java and mod loaders including Forge and Fabric. See https://github.com/MojoLauncher/MojoLauncher/tree/v3_openjdk.
+
+## License and security
+
+MojoLauncher is LGPL-3.0. Keep its copyright notices, license, source availability obligations, and every third-party license when distributing derivative builds. Do not embed CurseForge API secrets in the APK. Audit authentication logs before connecting any account flow.
