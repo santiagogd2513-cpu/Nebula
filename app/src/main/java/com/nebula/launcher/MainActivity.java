@@ -132,10 +132,12 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams typeParams = match(); typeParams.topMargin = dp(8); content.addView(type, typeParams);
         TextView filters = text("Minecraft " + selectedVersion() + " · " + selectedLoaderLabel(), 12, MUTED, false);
         LinearLayout.LayoutParams filterParams = match(); filterParams.topMargin = dp(8); content.addView(filters, filterParams);
-        LinearLayout results = new LinearLayout(this); results.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout.LayoutParams resultParams = match(); resultParams.topMargin = dp(12); content.addView(results, resultParams);
+        query.setSingleLine(true);
+        query.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
         Button search = button("Aplicar búsqueda y filtros");
         LinearLayout.LayoutParams searchParams = match(); searchParams.topMargin = dp(10); content.addView(search, searchParams);
+        LinearLayout results = new LinearLayout(this); results.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams resultParams = match(); resultParams.topMargin = dp(12); content.addView(results, resultParams);
         Button more = button("Cargar más proyectos");
         more.setVisibility(View.GONE);
         LinearLayout.LayoutParams moreParams = match(); moreParams.topMargin = dp(8); content.addView(more, moreParams);
@@ -169,6 +171,13 @@ public final class MainActivity extends Activity {
                 }));
         };
         search.setOnClickListener(v->{requestGeneration[0]++;loading[0]=false;offset[0]=0;loadPage[0].run();});
+        query.setOnEditorActionListener((view, actionId, event) -> {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
+                search.performClick();
+                return true;
+            }
+            return false;
+        });
         more.setOnClickListener(v->loadPage[0].run());
         loadPage[0].run();
         TextView note=text("Las fichas muestran datos oficiales de Modrinth. La instalación automática y la resolución segura de archivos y dependencias todavía no están habilitadas.",12,MUTED,false);
