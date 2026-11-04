@@ -22,6 +22,7 @@ import android.widget.Toast;
 
 import com.nebula.launcher.accounts.AccountSession;
 import com.nebula.launcher.accounts.LocalAccountProvider;
+import com.nebula.launcher.accounts.LocalProfileNames;
 import com.nebula.launcher.catalog.ModrinthClient;
 import com.nebula.launcher.catalog.CatalogImageLoader;
 
@@ -300,8 +301,7 @@ public final class MainActivity extends Activity {
             String name = playerName.getText().toString().trim();
             try {
                 AccountSession session = new LocalAccountProvider().create(name);
-                Set<String> names = new TreeSet<>(preferences.getStringSet(KEY_LOCAL_NAMES, Collections.emptySet()));
-                names.add(session.getPlayerName());
+                Set<String> names = LocalProfileNames.withAdded(preferences.getStringSet(KEY_LOCAL_NAMES, Collections.emptySet()), session.getPlayerName());
                 SharedPreferences.Editor editor = preferences.edit().putStringSet(KEY_LOCAL_NAMES, names);
                 if (preferences.getString(KEY_ACTIVE_NAME, "").isEmpty()) editor.putString(KEY_ACTIVE_NAME, session.getPlayerName());
                 editor.apply();
@@ -319,7 +319,7 @@ public final class MainActivity extends Activity {
 
     private void renderLocalProfiles(LinearLayout target) {
         target.removeAllViews();
-        Set<String> stored = preferences.getStringSet(KEY_LOCAL_NAMES, Collections.emptySet());
+        Set<String> stored = LocalProfileNames.sanitize(preferences.getStringSet(KEY_LOCAL_NAMES, Collections.emptySet()));
         List<String> names = new ArrayList<>(stored);
         Collections.sort(names, String.CASE_INSENSITIVE_ORDER);
         if (names.isEmpty()) {
@@ -345,11 +345,10 @@ public final class MainActivity extends Activity {
             remove.setTextSize(11);
             row.addView(remove, new LinearLayout.LayoutParams(-2, dp(42)));
             remove.setOnClickListener(v -> {
-                Set<String> updated = new TreeSet<>(preferences.getStringSet(KEY_LOCAL_NAMES, Collections.emptySet()));
-                updated.remove(name);
+                Set<String> updated = LocalProfileNames.without(preferences.getStringSet(KEY_LOCAL_NAMES, Collections.emptySet()), name);
                 SharedPreferences.Editor editor = preferences.edit().putStringSet(KEY_LOCAL_NAMES, updated);
                 if (name.equals(preferences.getString(KEY_ACTIVE_NAME, ""))) {
-                    editor.putString(KEY_ACTIVE_NAME, updated.isEmpty() ? "" : updated.iterator().next());
+                    editor.putString(KEY_ACTIVE_NAME, LocalProfileNames.resolveActive(updated, ""));
                 }
                 editor.apply();
                 renderLocalProfiles(target);
