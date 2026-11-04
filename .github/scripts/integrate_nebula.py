@@ -116,8 +116,8 @@ manifest.write_text(manifest_source[:application_match.start()] + application_ta
 print("Nebula sources embedded; Mojo storage bootstrap retained; Nebula UI and app identity applied.")
 
 
-// Replace the legacy launcher chrome with a Nebula-branded shell. The upstream
-// fragments, installers, instance manager, preferences and launch pipeline remain
+# Replace the legacy launcher chrome with a Nebula-branded shell. The upstream
+# fragments, installers, instance manager, preferences and launch pipeline remain
 // the real implementation; only the outer activity chrome is rebranded.
 launcher_layout = root / "app_mojo/src/main/res/layout/activity_mojo_ui.xml"
 launcher_layout.write_text("""<?xml version="1.0" encoding="utf-8"?>
@@ -135,7 +135,7 @@ launcher_layout.write_text("""<?xml version="1.0" encoding="utf-8"?>
         android:gravity="center_vertical"
         android:paddingStart="@dimen/_18sdp"
         android:text="NEBULA"
-        android:textColor="@color/white"
+        android:textColor="#FFFFFFFF"
         android:textSize="18sp"
         android:textStyle="bold"
         android:letterSpacing="0.16"
