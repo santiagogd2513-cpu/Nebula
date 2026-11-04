@@ -42,6 +42,12 @@ jobs:
         with:
           gradle-version: '8.13'
 
+      - name: Static checks for integration tooling
+        run: |
+          set -euo pipefail
+          python3 -m py_compile .github/scripts/integrate_nebula.py
+          git diff --check
+
       - name: Integrate Nebula into the Mojo application
         run: python3 .github/scripts/integrate_nebula.py
 
