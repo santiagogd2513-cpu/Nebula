@@ -19,4 +19,8 @@
             </intent-filter>
         </activity>
     </application>
+    <queries>
+        <package android:name="git.artdeell.mjlaunch.debug" />
+        <package android:name="git.artdeell.mjlaunch" />
+    </queries>
 </manifest>
