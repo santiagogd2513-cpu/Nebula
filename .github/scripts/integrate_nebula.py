@@ -114,3 +114,92 @@ application_tag = application_tag[:-1] + ' android:icon="@drawable/nebula_launch
 manifest.write_text(manifest_source[:application_match.start()] + application_tag + manifest_source[application_match.end():])
 
 print("Nebula sources embedded; Mojo storage bootstrap retained; Nebula UI and app identity applied.")
+
+
+// Replace the legacy launcher chrome with a Nebula-branded shell. The upstream
+// fragments, installers, instance manager, preferences and launch pipeline remain
+// the real implementation; only the outer activity chrome is rebranded.
+launcher_layout = root / "app_mojo/src/main/res/layout/activity_mojo_ui.xml"
+launcher_layout.write_text("""<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/transparent">
+
+    <TextView
+        android:id="@+id/nebula_runtime_title"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/_52sdp"
+        android:gravity="center_vertical"
+        android:paddingStart="@dimen/_18sdp"
+        android:text="NEBULA"
+        android:textColor="@color/white"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.16"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/setting_button"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/setting_button"
+        android:layout_width="@dimen/_52sdp"
+        android:layout_height="@dimen/_52sdp"
+        android:background="?attr/selectableItemBackground"
+        android:src="@drawable/ic_px_sliders"
+        android:contentDescription="Ajustes de Nebula"
+        android:scaleType="fitCenter"
+        android:paddingVertical="@dimen/_8sdp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/container_fragment"
+        android:name="git.artdeell.mojo.fragments.MainMenuFragment"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/progress_layout"
+        app:layout_constraintTop_toBottomOf="@+id/nebula_runtime_title" />
+
+    <com.kdt.mcgui.ProgressLayout
+        android:id="@+id/progress_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
+""")
+
+# Add a dedicated optimization entry point to the engine's complete preferences.
+pref_main = root / "app_mojo/src/main/res/xml/pref_main.xml"
+pref_source = pref_main.read_text()
+shortcut = '''
+        <Preference
+            android:key="nebula_optimization_shortcut"
+            android:title="@string/nebula_optimization_title"
+            android:summary="@string/nebula_optimization_summary"
+            android:fragment="git.artdeell.mojo.prefs.screens.LauncherPreferenceVideoFragment"
+            android:icon="@drawable/ic_px_gauge"/>
+'''
+if "nebula_optimization_shortcut" not in pref_source:
+    anchor = '<PreferenceCategory\n        android:title="@string/preference_category_main_categories"'
+    if anchor not in pref_source:
+        raise SystemExit("Cannot locate main settings category for optimization shortcut")
+    pref_source = pref_source.replace(anchor, shortcut + "\n    " + anchor, 1)
+    pref_main.write_text(pref_source)
+
+strings = root / "app_mojo/src/main/res/values/strings.xml"
+strings_source = strings.read_text()
+if "nebula_optimization_title" not in strings_source:
+    strings_source = strings_source.replace(
+        "</resources>",
+        '    <string name="nebula_optimization_title">Optimización</string>\\n'
+        '    <string name="nebula_optimization_summary">Resolución, renderizador y opciones de rendimiento</string>\\n'
+        "</resources>",
+        1
+    )
+    strings.write_text(strings_source)
+
+print("Nebula runtime shell and optimization settings entry integrated.")
