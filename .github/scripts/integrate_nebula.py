@@ -195,8 +195,8 @@ strings_source = strings.read_text()
 if "nebula_optimization_title" not in strings_source:
     strings_source = strings_source.replace(
         "</resources>",
-        '    <string name="nebula_optimization_title">Optimización</string>\\n'
-        '    <string name="nebula_optimization_summary">Resolución, renderizador y opciones de rendimiento</string>\\n'
+        '    <string name="nebula_optimization_title">Optimización</string>\n'
+        '    <string name="nebula_optimization_summary">Resolución, renderizador y opciones de rendimiento</string>\n'
         "</resources>",
         1
     )
