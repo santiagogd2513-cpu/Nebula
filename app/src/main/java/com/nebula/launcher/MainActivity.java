@@ -123,20 +123,8 @@ public final class MainActivity extends Activity {
     }
 
     private void openMinecraftRuntime() {
-        String[] packages = {"git.artdeell.mjlaunch.debug", "git.artdeell.mjlaunch"};
-        for (String packageName : packages) {
-            Intent launch = getPackageManager().getLaunchIntentForPackage(packageName);
-            if (launch != null) {
-                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(launch);
-                return;
-            }
-        }
-        new android.app.AlertDialog.Builder(this)
-                .setTitle("Falta instalar el motor de Minecraft")
-                .setMessage("Nebula necesita el APK completo de MojoLauncher para ejecutar Minecraft. Descarga e instala el artefacto “mojolauncher-full-debug-apk” de esta misma compilación y vuelve aquí.")
-                .setPositiveButton("Entendido", null)
-                .show();
+        // The Mojo runtime is embedded in this same APK; never launch a second package.
+        startActivity(new Intent(this, git.artdeell.mojo.LauncherActivity.class));
     }
 
     private void showHome() {
