@@ -60,6 +60,7 @@ public final class MainActivity extends Activity {
     private final CatalogImageLoader imageLoader = new CatalogImageLoader();
     private SharedPreferences preferences;
     private int screenGeneration = 0;
+    private String pendingInstallType = "vanilla";
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -196,16 +197,16 @@ public final class MainActivity extends Activity {
         content.addView(text("La descarga e instalación completa aún no están habilitadas: falta integrar MojoLauncher y el instalador de perfiles. Esta pantalla no descargará archivos incompletos ni afirmará que Minecraft está instalado.", 12, MUTED, false), match());
 
         final String[] selectedVersion = {preferences.getString(KEY_INSTALL_VERSION, "1.20.1")};
-        final String[] selectedType = {preferences.getString(KEY_INSTALL_TYPE, "vanilla")};
+        pendingInstallType = preferences.getString(KEY_INSTALL_TYPE, "vanilla");
         prepare.setOnClickListener(v -> {
             String version = versions.getSelectedItem() == null ? selectedVersion[0] : versions.getSelectedItem().toString();
-            preferences.edit().putString(KEY_INSTALL_VERSION, version).putString(KEY_INSTALL_TYPE, selectedType[0]).apply();
-            selected.setText("Selección guardada: Minecraft " + version + " · " + selectedType[0]);
+            preferences.edit().putString(KEY_INSTALL_VERSION, version).putString(KEY_INSTALL_TYPE, pendingInstallType).apply();
+            selected.setText("Selección guardada: Minecraft " + version + " · " + pendingInstallType);
             Toast.makeText(this, "Selección de instalación guardada.", Toast.LENGTH_SHORT).show();
         });
         Runnable updateSelection = () -> {
             String version = versions.getSelectedItem() == null ? selectedVersion[0] : versions.getSelectedItem().toString();
-            selected.setText("Seleccionado: Minecraft " + version + " · " + selectedType[0]);
+            selected.setText("Seleccionado: Minecraft " + version + " · " + pendingInstallType);
             prepare.setEnabled(versions.getAdapter() != null && versions.getAdapter().getCount() > 0
                     && versions.getSelectedItem() != null);
         };
@@ -219,7 +220,7 @@ public final class MainActivity extends Activity {
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { prepare.setEnabled(false); }
         });
         // Restore the saved type visually in the summary; the user can change it with any option above.
-        selected.setText("Seleccionado: Minecraft " + selectedVersion[0] + " · " + selectedType[0]);
+        selected.setText("Seleccionado: Minecraft " + selectedVersion[0] + " · " + pendingInstallType);
         fetchMinecraftVersions(versions, selectedVersion, updateSelection);
     }
 
@@ -229,6 +230,7 @@ public final class MainActivity extends Activity {
     }
 
     private void selectInstallType(String type, String label) {
+        pendingInstallType = type;
         preferences.edit().putString(KEY_INSTALL_TYPE, type).apply();
         Toast.makeText(this, label + " seleccionado. El instalador completo está pendiente de integrar.", Toast.LENGTH_SHORT).show();
     }
