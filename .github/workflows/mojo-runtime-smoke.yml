@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   unified-apk:
@@ -59,7 +59,25 @@ jobs:
           sha256sum "$APK"
           echo "APK size: $(stat -c%s "$APK") bytes"
 
-      - name: Upload Nebula unified APK
+      - name: Publish the standalone Nebula APK to GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APK_PATH: ${{ steps.apk.outputs.path }}
+          RUN_NUMBER: ${{ github.run_number }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          VERSION="0.2.${RUN_NUMBER}"
+          TAG="v${VERSION}"
+          test -s "${APK_PATH}"
+          # Release asset is the APK itself; never upload an APK-containing ZIP.
+          gh release create "${TAG}" "${APK_PATH}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "Nebula ${VERSION}" \
+            --notes "Nebula unified Android APK. Source commit: ${SHA}." \
+            --latest
+
+      - name: Keep a direct APK workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: nebula-unified-full-debug-apk
