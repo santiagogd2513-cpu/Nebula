@@ -1,4 +1,35 @@
-pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
-dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url "https://jitpack.io" }
+    }
+}
+
 rootProject.name = 'Nebula'
 include ':app'
+
+// MojoLauncher runtime and its native / installer modules.
+// These are included from the pinned upstream submodule so Nebula can
+// build against the real engine instead of treating it as a second APK.
+include ':app_mojo', ':forge_installer', ':NoBlocklist'
+include ':glfw:jni_bindings', ':mojoexec:jni_bindings', ':sdl:jni_bindings'
+
+project(':app_mojo').projectDir = file('vendor/MojoLauncher/app_mojo')
+project(':forge_installer').projectDir = file('vendor/MojoLauncher/forge_installer')
+project(':NoBlocklist').projectDir = file('vendor/MojoLauncher/NoBlocklist')
+project(':glfw').projectDir = file('vendor/MojoLauncher/glfw')
+project(':glfw:jni_bindings').projectDir = file('vendor/MojoLauncher/glfw/jni_bindings')
+project(':mojoexec').projectDir = file('vendor/MojoLauncher/mojoexec')
+project(':mojoexec:jni_bindings').projectDir = file('vendor/MojoLauncher/mojoexec/jni_bindings')
+project(':sdl').projectDir = file('vendor/MojoLauncher/sdl')
+project(':sdl:jni_bindings').projectDir = file('vendor/MojoLauncher/sdl/jni_bindings')
