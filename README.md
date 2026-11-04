@@ -1,25 +1,22 @@
 # Nebula Android Launcher
 
-Nebula is an Android launcher project for the planned Minecraft: Java Edition runtime.
+Nebula is an Android launcher project for Minecraft: Java Edition.
 
 ## Current milestone
 
 The Android app currently includes:
 
-- A dark blue launcher interface with Inicio, Biblioteca, Cuentas, and Ajustes.
-- A dedicated Instalar screen that queries Mojang's official version manifest and lets users select OptiFine, Vanilla, Forge, Fabric, NeoForge, or Quilt in the requested order.
+- A dark blue launcher interface with Inicio, Instalar, Biblioteca, Cuentas, and Ajustes.
+- A version-selection screen backed by Mojang's official version manifest.
 - Modrinth v2 search for mods, modpacks, shaders, and resource packs.
-- Minecraft version and loader preferences saved on-device.
-- Loader-aware catalog filtering (Forge/Fabric/Quilt/NeoForge applies to mods and modpacks; shaders and resource packs do not receive a loader facet).
-- A paginated, popular-first Modrinth catalog with project icons, names, and short descriptions.
-- In-app project details with authors, declared dependencies, full project description, and optional gallery images when the project supplies them.
-- Local/offline player profiles that can be created, listed, and removed.
-- Encrypted token storage based on Android Keystore for future online account providers.
+- Local/offline player profiles and encrypted token storage groundwork.
 - Automated unit tests, debug APK builds, and GitHub Releases.
 
-## Important limitations
+## Runtime integration status
 
-The Instalar screen currently selects and saves a version/profile only; it does not yet download or install the full game. This milestone does **not** yet launch Minecraft. The MojoLauncher runtime and native dependencies have not been imported, so Jugar remains disabled. Microsoft and Ely.by authentication are not implemented. Modrinth search is metadata-only: automatic downloads, dependency resolution, file verification, and installation are not enabled. CurseForge is not connected.
+The upstream [MojoLauncher](https://github.com/MojoLauncher/MojoLauncher) source is now pinned as a Git submodule at `vendor/MojoLauncher`, branch `v3_openjdk`, commit `417bc82cc3d505e6ade6901040ffd4238af2df45`. Its recursive native submodules are part of that upstream checkout.
+
+**This is the source-import milestone, not a completed in-app runtime integration.** Nebula's current Android application is still a separate app module; its `MojoRuntimeAdapter` remains fail-closed. The Nebula UI does not yet launch the vendored runtime, and the Instalar screen does not yet install Minecraft or Forge. A dedicated workflow is being added to compile the pinned upstream runtime as an integration smoke test before merging its Android activities, services, resources, and native libraries into Nebula.
 
 ## Target
 
@@ -27,10 +24,10 @@ The Instalar screen currently selects and saves a version/profile only; it does 
 - Minecraft: Java Edition
 - Initial runtime target: Minecraft 1.20.1 with Forge
 
-## Build
+## Build Nebula UI
 
-GitHub Actions provisions JDK 17, Android API 35, Build Tools 35.0.0, and Gradle 8.9. It runs unit tests before building the debug APK and publishing a versioned GitHub Release. A Gradle wrapper is not yet committed.
+GitHub Actions provisions JDK 17, Android API 35, Build Tools 35.0.0, and Gradle 8.9. It runs unit tests before building the Nebula debug APK.
 
 ## Licensing
 
-Before importing MojoLauncher source, preserve its LGPL-3.0 license and all third-party notices. No upstream runtime code is represented as included in this milestone.
+MojoLauncher is LGPL-3.0. Its license and third-party notices are retained in the vendored submodule. Any eventual distribution of a combined build must preserve the applicable license notices and source obligations.
