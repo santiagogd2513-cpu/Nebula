@@ -28,8 +28,16 @@ public final class NebulaModInstaller {
         new Thread(() -> {
             File temporary = null;
             try {
-                File gameDirectory = selectedGameDirectory();
-                if (gameDirectory == null) throw new IllegalStateException("Primero abre Nebula y selecciona una instancia de Minecraft.");
+                SelectedInstance instance = selectedInstance();
+                if (instance == null || instance.gameDirectory == null) throw new IllegalStateException("Primero abre Nebula e instala o selecciona una instancia de Minecraft.");
+                File gameDirectory = instance.gameDirectory;
+                String targetVersion = instance.versionId;
+                if (targetVersion == null || !targetVersion.matches("[0-9]+\\.[0-9]+(\\.[0-9]+)?")) {
+                    targetVersion = minecraftVersion;
+                }
+                if (!minecraftVersion.equals(targetVersion)) {
+                    throw new IllegalStateException("La instancia seleccionada usa Minecraft " + targetVersion + ". Selecciona esa versión en Ajustes para instalar mods compatibles.");
+                }
                 File mods = new File(gameDirectory, "mods");
                 if (!mods.exists() && !mods.mkdirs()) throw new IllegalStateException("No se pudo crear la carpeta mods.");
 
@@ -65,11 +73,22 @@ public final class NebulaModInstaller {
         Toast.makeText(app, "Preparando instalación del mod…", Toast.LENGTH_SHORT).show();
     }
 
-    private static File selectedGameDirectory() throws Exception {
+    private static final class SelectedInstance {
+        final File gameDirectory;
+        final String versionId;
+        SelectedInstance(File gameDirectory, String versionId) {
+            this.gameDirectory = gameDirectory;
+            this.versionId = versionId;
+        }
+    }
+
+    private static SelectedInstance selectedInstance() throws Exception {
         Class<?> instances = Class.forName("git.artdeell.mojo.instances.Instances");
         Object selected = instances.getMethod("loadSelectedInstance").invoke(null);
         if (selected == null) return null;
-        return (File) selected.getClass().getMethod("getGameDirectory").invoke(selected);
+        File gameDirectory = (File) selected.getClass().getMethod("getGameDirectory").invoke(selected);
+        String versionId = (String) selected.getClass().getField("versionId").get(selected);
+        return new SelectedInstance(gameDirectory, versionId);
     }
 
     private static JSONObject findCompatibleVersion(String projectId, String mc, String loader) throws Exception {
