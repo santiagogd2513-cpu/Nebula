@@ -18,7 +18,8 @@ import java.util.concurrent.RejectedExecutionException;
 /** Asynchronous Modrinth v2 catalog and project-detail client. */
 public final class ModrinthClient implements AutoCloseable {
     private static final String API = "https://api.modrinth.com/v2";
-    private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
+    private static final int MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
+    private final ExecutorService executor = Executors.newFixedThreadPool(3, r -> {
         Thread thread = new Thread(r, "Nebula-Modrinth");
         thread.setDaemon(true);
         return thread;
@@ -160,34 +161,55 @@ public final class ModrinthClient implements AutoCloseable {
     }
 
     private JSONObject getJson(String address) throws Exception {
-        HttpURLConnection c=(HttpURLConnection)new URL(address).openConnection();
-        try{
-            c.setRequestMethod("GET");c.setConnectTimeout(12000);c.setReadTimeout(15000);
-            c.setInstanceFollowRedirects(false);c.setRequestProperty("Accept","application/json");
-            c.setRequestProperty("User-Agent","NebulaLauncher/0.3.0 (Android)");
-            int status=c.getResponseCode();
-            if(status!=HttpURLConnection.HTTP_OK)throw new IllegalStateException(httpError(status));
-            StringBuilder body=new StringBuilder();
-            try(BufferedReader reader=new BufferedReader(new InputStreamReader(c.getInputStream(),StandardCharsets.UTF_8))){
-                String line;while((line=reader.readLine())!=null)body.append(line);
-            }
-            return new JSONObject(body.toString());
-        }finally{c.disconnect();}
+        return new JSONObject(readResponse(address));
     }
 
     private JSONArray getArray(String address) throws Exception {
-        HttpURLConnection c=(HttpURLConnection)new URL(address).openConnection();
-        try{
-            c.setRequestMethod("GET");c.setConnectTimeout(12000);c.setReadTimeout(15000);
-            c.setInstanceFollowRedirects(false);c.setRequestProperty("Accept","application/json");
-            c.setRequestProperty("User-Agent","NebulaLauncher/0.3.0 (Android)");
-            int status=c.getResponseCode();if(status!=HttpURLConnection.HTTP_OK)throw new IllegalStateException("Modrinth respondió HTTP "+status);
-            StringBuilder body=new StringBuilder();
-            try(BufferedReader reader=new BufferedReader(new InputStreamReader(c.getInputStream(),StandardCharsets.UTF_8))){
-                String line;while((line=reader.readLine())!=null)body.append(line);
+        return new JSONArray(readResponse(address));
+    }
+
+    /** Shared bounded HTTP reader prevents unexpectedly large API responses consuming heap. */
+    private String readResponse(String address) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL(address).openConnection();
+        try {
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(8000);
+            connection.setReadTimeout(12000);
+            connection.setUseCaches(true);
+            connection.setInstanceFollowRedirects(false);
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("Accept-Encoding", "gzip");
+            connection.setRequestProperty("User-Agent", "NebulaLauncher/0.3.2 (Android)");
+
+            int status = connection.getResponseCode();
+            if (status != HttpURLConnection.HTTP_OK) {
+                throw new IllegalStateException(httpError(status));
             }
-            return new JSONArray(body.toString());
-        }finally{c.disconnect();}
+
+            int declaredLength = connection.getContentLength();
+            if (declaredLength > MAX_RESPONSE_BYTES) {
+                throw new IllegalStateException("La respuesta del catálogo es demasiado grande.");
+            }
+
+            StringBuilder body = new StringBuilder(Math.max(256,
+                    declaredLength > 0 ? declaredLength : 1024));
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    connection.getInputStream(), StandardCharsets.UTF_8), 8192)) {
+                char[] buffer = new char[4096];
+                int count;
+                int total = 0;
+                while ((count = reader.read(buffer)) != -1) {
+                    total += count;
+                    if (total > MAX_RESPONSE_BYTES) {
+                        throw new IllegalStateException("La respuesta del catálogo supera el límite permitido.");
+                    }
+                    body.append(buffer, 0, count);
+                }
+            }
+            return body.toString();
+        } finally {
+            connection.disconnect();
+        }
     }
 
     private String httpError(int status) {
