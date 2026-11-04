@@ -9,6 +9,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.widget.PopupMenu;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -88,9 +89,57 @@ public final class MainActivity extends Activity {
         page.setPadding(dp(22), dp(24), dp(22), dp(22));
         scroll.addView(page);
 
-        TextView brand = text("NEBULA", 13, BLUE, true);
+        LinearLayout topBar = new LinearLayout(this);
+        topBar.setGravity(Gravity.CENTER_VERTICAL);
+        topBar.setOrientation(LinearLayout.HORIZONTAL);
+
+        Button menuButton = button("☰");
+        menuButton.setTextSize(22);
+        menuButton.setContentDescription("Abrir navegación");
+        menuButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(PANEL));
+        topBar.addView(menuButton, new LinearLayout.LayoutParams(dp(52), dp(48)));
+        menuButton.setOnClickListener(v -> {
+            PopupMenu menu = new PopupMenu(this, menuButton);
+            menu.getMenu().add("Inicio").setOnMenuItemClickListener(item -> { showHome(); return true; });
+            menu.getMenu().add("Instalar Minecraft").setOnMenuItemClickListener(item -> { showInstallations(); return true; });
+            menu.getMenu().add("Biblioteca").setOnMenuItemClickListener(item -> { showLibrary(); return true; });
+            menu.getMenu().add("Ajustes").setOnMenuItemClickListener(item -> { showSettings(); return true; });
+            menu.show();
+        });
+
+        TextView brand = text("NEBULA", 14, BLUE, true);
         brand.setLetterSpacing(.18f);
-        page.addView(brand);
+        LinearLayout.LayoutParams brandParams = new LinearLayout.LayoutParams(0, -2, 1);
+        brandParams.leftMargin = dp(12);
+        topBar.addView(brand, brandParams);
+
+        String activeAccount = preferences.getString(KEY_ACTIVE_NAME, "");
+        Button accountButton = button(activeAccount.isEmpty() ? "●" : activeAccount.substring(0, 1).toUpperCase(java.util.Locale.ROOT));
+        accountButton.setTextSize(18);
+        accountButton.setContentDescription("Cuentas y perfiles");
+        accountButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(PANEL));
+        topBar.addView(accountButton, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        accountButton.setOnClickListener(v -> {
+            PopupMenu accounts = new PopupMenu(this, accountButton);
+            Set<String> saved = LocalProfileNames.sanitize(preferences.getStringSet(KEY_LOCAL_NAMES, Collections.emptySet()));
+            List<String> sorted = new ArrayList<>(saved);
+            Collections.sort(sorted, String.CASE_INSENSITIVE_ORDER);
+            if (sorted.isEmpty()) {
+                accounts.getMenu().add("Sin cuentas guardadas").setEnabled(false);
+            } else {
+                for (String name : sorted) {
+                    accounts.getMenu().add(name).setOnMenuItemClickListener(item -> {
+                        preferences.edit().putString(KEY_ACTIVE_NAME, name).apply();
+                        showHome();
+                        return true;
+                    });
+                }
+            }
+            accounts.getMenu().add("＋ Crear cuenta").setOnMenuItemClickListener(item -> { showCreateAccountMenu(); return true; });
+            accounts.getMenu().add("Administrar cuentas").setOnMenuItemClickListener(item -> { showAccounts(); return true; });
+            accounts.show();
+        });
+        page.addView(topBar);
 
         TextView title = text(section, 30, TEXT, true);
         LinearLayout.LayoutParams titleParams = match();
@@ -104,21 +153,10 @@ public final class MainActivity extends Activity {
         contentParams.topMargin = dp(24);
         page.addView(content, contentParams);
 
-        LinearLayout nav = new LinearLayout(this);
-        nav.setGravity(Gravity.CENTER);
-        nav.setPadding(dp(10), dp(8), dp(10), dp(8));
-        nav.setBackgroundColor(BG);
-        addNav(nav, "Inicio", this::showHome);
-        addNav(nav, "Instalar", this::showInstallations);
-        addNav(nav, "Biblioteca", this::showLibrary);
-        addNav(nav, "Cuentas", this::showAccounts);
-        addNav(nav, "Ajustes", this::showSettings);
-
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(BG);
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
-        root.addView(nav, new LinearLayout.LayoutParams(-1, -2));
         setContentView(root);
     }
 
