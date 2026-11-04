@@ -47,6 +47,7 @@ public final class MainActivity extends Activity {
     private final ModrinthClient modrinth = new ModrinthClient();
     private final CatalogImageLoader imageLoader = new CatalogImageLoader();
     private SharedPreferences preferences;
+    private int screenGeneration = 0;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -64,6 +65,7 @@ public final class MainActivity extends Activity {
     }
 
     private void base(String section) {
+        screenGeneration++;
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         scroll.setBackgroundColor(BG);
@@ -140,17 +142,20 @@ public final class MainActivity extends Activity {
         final int[] offset = {0};
         final int[] total = {0};
         final boolean[] loading = {false};
+        final int screenToken = screenGeneration;
+        final int[] requestGeneration = {0};
         Runnable[] loadPage = new Runnable[1];
         loadPage[0] = () -> {
             if (loading[0]) return;
             loading[0] = true; search.setEnabled(false); more.setEnabled(false);
             if (offset[0] == 0) results.removeAllViews();
             results.addView(text(offset[0] == 0 ? "Cargando proyectos…" : "Cargando más proyectos…", 13, MUTED, false));
+            final int requestToken = requestGeneration[0];
             String version=selectedVersion(), loader=preferences.getString(KEY_LOADER,"forge");
             String projectType=values[type.getSelectedItemPosition()];
             modrinth.search(query.getText().toString(), projectType, version, loader, offset[0], (projects,totalHits,error) ->
                 runOnUiThread(() -> {
-                    if(isFinishing()||isDestroyed())return;
+                    if(isFinishing()||isDestroyed()||screenToken!=screenGeneration||requestToken!=requestGeneration[0])return;
                     loading[0]=false;search.setEnabled(true);more.setEnabled(true);
                     if(offset[0]==0)results.removeAllViews();
                     if(error!=null){results.addView(text("No se pudo cargar el catálogo: "+error,13,MUTED,false));more.setVisibility(View.GONE);return;}
@@ -163,7 +168,7 @@ public final class MainActivity extends Activity {
                     if(offset[0]<total[0]&&!projects.isEmpty())more.setText("Cargar más · "+offset[0]+" de "+total[0]);
                 }));
         };
-        search.setOnClickListener(v->{offset[0]=0;loadPage[0].run();});
+        search.setOnClickListener(v->{requestGeneration[0]++;loading[0]=false;offset[0]=0;loadPage[0].run();});
         more.setOnClickListener(v->loadPage[0].run());
         loadPage[0].run();
         TextView note=text("Las fichas muestran datos oficiales de Modrinth. La instalación automática y la resolución segura de archivos y dependencias todavía no están habilitadas.",12,MUTED,false);
@@ -214,8 +219,9 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams bodySectionParams=match();bodySectionParams.bottomMargin=dp(12);content.addView(bodySection,bodySectionParams);
         LinearLayout gallery=new LinearLayout(this);gallery.setOrientation(LinearLayout.VERTICAL);
         content.addView(gallery,match());
+        final int detailScreenToken = screenGeneration;
         modrinth.getProject(project.id,(details,error)->runOnUiThread(()->{
-            if(isFinishing()||isDestroyed())return;
+            if(isFinishing()||isDestroyed()||detailScreenToken!=screenGeneration)return;
             info.removeAllViews();gallery.removeAllViews();
             if(error!=null){info.addView(text("No se pudieron cargar los detalles completos: "+error,13,MUTED,false));return;}
             String authors=details.authors.isEmpty()?(project.author.isEmpty()?"Autor no especificado":project.author):android.text.TextUtils.join(", ",details.authors);
