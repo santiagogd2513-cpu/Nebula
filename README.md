@@ -2,26 +2,32 @@
 
 Nebula is an Android launcher project intended to run Minecraft: Java Edition on supported Android devices.
 
-## Project goals
+## Current milestone: Android UI shell (0.1.0)
 
-- A redesigned launcher interface with a blue visual identity and animated navigation.
-- Account management based on the MojoLauncher/PojavLauncher ecosystem.
-- Minecraft version and mod-loader selection.
-- Mod, modpack, shader-pack, and resource-pack discovery and installation.
-- Modrinth integration, with exact Minecraft-version and loader compatibility filters.
-- CurseForge integration through a protected service; API credentials must not be embedded in the APK.
-- Safe handling of authentication tokens and OAuth credentials.
+This commit adds the initial Android Gradle project and a native Java interface with Inicio, Biblioteca, Cuentas, and Ajustes sections. It is a UI scaffold only: it does **not** yet launch Minecraft, authenticate accounts, download content, or produce a tested APK.
 
-## Target platform
+## Planned architecture
+
+- Android launcher shell and navigation.
+- MojoLauncher/PojavLauncher runtime integration, preserving upstream notices and license obligations.
+- Microsoft, Ely.by, and local account providers with safe credential handling.
+- Modrinth catalog integration and protected CurseForge access.
+- Mods, modpacks, shaders, and resource packs with exact Minecraft-version and loader compatibility checks.
+
+## Target
 
 - Android
 - Minecraft: Java Edition
 - Initial compatibility target: Minecraft 1.20.1
 
-## Development status
+## Build prerequisites
 
-This repository has been initialized. The launcher source code, Gradle project, assets, and build pipeline have not yet been imported or implemented.
+- Android Studio or Android SDK command-line tools
+- JDK 17
+- Gradle 8.9 or a compatible Gradle installation
+
+The Gradle wrapper will be added when the upstream build/tooling integration is settled. The source project has not yet been built or tested in this environment.
 
 ## Licensing
 
-The project will preserve the applicable license notices and comply with the licenses of any upstream components used, including MojoLauncher/PojavLauncher-derived code. Third-party components and their licenses must be documented before distribution.
+Before importing upstream launcher code, retain its license and copyright notices and document all third-party components. No upstream code is represented as included in this initial scaffold.
