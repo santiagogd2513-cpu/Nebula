@@ -53,8 +53,8 @@ jobs:
           source = source.replace('applicationId "git.artdeell.mjlaunch"', 'applicationId "com.nebula.launcher"', 1)
           source = source.replace("'git.artdeell.mjlaunch.scoped.gamefolder.debug'", "'com.nebula.launcher.debug.scoped.gamefolder'")
           source = source.replace("'git.artdeell.mjlaunch.debug'", "'com.nebula.launcher.debug'")
-source = source.replace("'git.artdeell.mjlaunch'", "'com.nebula.launcher'")
-source = source.replace("'git.artdeell.mjlaunch.scoped.gamefolder'", "'com.nebula.launcher.scoped.gamefolder'")
+          source = source.replace("'git.artdeell.mjlaunch'", "'com.nebula.launcher'")
+          source = source.replace("'git.artdeell.mjlaunch.scoped.gamefolder'", "'com.nebula.launcher.scoped.gamefolder'")
           marker = "dependencies {"
           if 'implementation project(":app")' not in source:
               if marker not in source:
