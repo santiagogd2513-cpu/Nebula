@@ -2,32 +2,34 @@
 
 Nebula is an Android launcher project intended to run Minecraft: Java Edition on supported Android devices.
 
-## Current milestone: Android UI shell (0.1.0)
+## Current milestone: Android launcher shell and Modrinth search
 
-This commit adds the initial Android Gradle project and a native Java interface with Inicio, Biblioteca, Cuentas, and Ajustes sections. It is a UI scaffold only: it does **not** yet launch Minecraft, authenticate accounts, download content, or produce a tested APK.
+The app currently includes a native Android interface with Inicio, Biblioteca, Cuentas, and Ajustes sections. The Library screen is connected to the Modrinth v2 search API for mods, modpacks, shaders, and resource packs, with Minecraft version filtering and a Forge category filter where applicable.
+
+This is still an early development build. It does **not** yet launch Minecraft, authenticate Microsoft or Ely.by accounts, download or install catalog content, or verify mod dependencies. The Jugar button remains disabled until the MojoLauncher runtime is integrated and tested.
 
 ## Planned architecture
 
 - Android launcher shell and navigation.
-- MojoLauncher/PojavLauncher runtime integration, preserving upstream notices and license obligations.
+- MojoLauncher runtime integration, preserving upstream notices and license obligations.
 - Microsoft, Ely.by, and local account providers with safe credential handling.
-- Modrinth catalog integration and protected CurseForge access.
+- Modrinth catalog plus protected CurseForge access.
 - Mods, modpacks, shaders, and resource packs with exact Minecraft-version and loader compatibility checks.
 
 ## Target
 
 - Android
 - Minecraft: Java Edition
-- Initial compatibility target: Minecraft 1.20.1
+- Initial compatibility target: Minecraft 1.20.1 with Forge
 
 ## Build prerequisites
 
-- Android Studio or Android SDK command-line tools
+- Android SDK command-line tools with Android API 35 and Build Tools 35.0.0
 - JDK 17
-- Gradle 8.9 or a compatible Gradle installation
+- Gradle 8.9
 
-The Gradle wrapper will be added when the upstream build/tooling integration is settled. The source project has not yet been built or tested in this environment.
+GitHub Actions currently provisions Gradle directly and runs unit tests before building the debug APK. A Gradle wrapper is not yet committed.
 
 ## Licensing
 
-Before importing upstream launcher code, retain its license and copyright notices and document all third-party components. No upstream code is represented as included in this initial scaffold.
+Before importing upstream launcher code, retain its license and copyright notices and document all third-party components. No upstream runtime code is represented as included in this milestone.

@@ -19,7 +19,6 @@ import javax.crypto.spec.GCMParameterSpec;
 public final class SecureTokenStore {
     private static final String PREFS = "nebula_secure_tokens";
     private static final String KEY_ALIAS = "nebula.account.tokens.v1";
-    private static final int IV_BYTES = 12;
     private static final int TAG_BITS = 128;
     private final SharedPreferences preferences;
 
@@ -56,7 +55,9 @@ public final class SecureTokenStore {
         if (!preferences.edit().remove(accountId).commit()) throw new IOException("Could not remove account credentials");
     }
 
-    private SecretKey getOrCreateKey() throws GeneralSecurityException {
+    // KeyStore.load() declares IOException in addition to security exceptions.
+    // save() and read() already expose IOException to their callers.
+    private SecretKey getOrCreateKey() throws GeneralSecurityException, IOException {
         KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
         keyStore.load(null);
         java.security.Key existing = keyStore.getKey(KEY_ALIAS, null);

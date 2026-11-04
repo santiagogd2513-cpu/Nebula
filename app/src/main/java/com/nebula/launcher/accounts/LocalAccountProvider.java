@@ -1,7 +1,5 @@
 package com.nebula.launcher.accounts;
 
-import android.app.Activity;
-
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
