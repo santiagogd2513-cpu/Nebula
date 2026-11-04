@@ -1,15 +1,20 @@
-# Modrinth catalog milestone
+# Modrinth catalog
 
-Nebula has an asynchronous Modrinth v2 search client connected to the Library screen. It supports mods, modpacks, shaders, and resource packs, applies the requested Minecraft game-version facet, and applies the Forge category facet to mods and modpacks only. Requests use HTTPS, a fixed API host, and connection/read timeouts.
+Nebula's Library screen uses the Modrinth v2 search API over HTTPS. It supports mods, modpacks, shaders, and resource packs, and allows the user to choose a Minecraft version and loader in Settings.
 
-## Current limits
+## Compatibility filtering
 
-- Search results are metadata only. Downloading, dependency resolution, checksum verification, and installation are not implemented.
-- Before installation, validate the selected version's game_versions and loaders metadata; search facets alone are not sufficient.
-- Shader and resource-pack searches do not apply a Forge loader facet.
-- CurseForge is not connected. Its API key must remain on a protected backend, never inside the APK.
-- Do not present a result as installable until its version metadata and dependencies have been checked.
+- Every search applies the selected Minecraft game version.
+- Forge, Fabric, Quilt, or NeoForge category facets are applied to mods and modpacks.
+- Shaders and resource packs omit the loader facet.
+- Search results are metadata only. Opening a result navigates to its public Modrinth project page.
 
-## Build automation
+## Not yet implemented
 
-The GitHub Actions workflow runs on pushes to main and manual workflow dispatch. It runs unit tests, builds a debug APK, then publishes a versioned GitHub Release only when all preceding steps succeed.
+- Version-file selection and download.
+- Dependency resolution and conflict checks.
+- File size limits, SHA-512 verification, and safe atomic installation.
+- Modpack import/export.
+- CurseForge API integration. Its API key must remain on a protected backend, never inside the APK.
+
+Do not label catalog results as installed or installable until all version metadata, dependencies, and file hashes have been validated.

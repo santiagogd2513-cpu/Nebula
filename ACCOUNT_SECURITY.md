@@ -1,17 +1,19 @@
-# Account system — Phase 3
+# Account system
 
-## Provider model
+## Implemented
 
-Nebula defines provider types for Microsoft, Ely.by, and local/offline profiles. Provider implementations must return non-secret account metadata separately from credentials.
+- Provider-neutral account metadata in `AccountSession`.
+- Local/offline profile creation with Minecraft-compatible offline UUID generation.
+- Local profile names are stored as non-secret app preferences and can be removed.
+- AES-GCM credential storage backed by Android Keystore for future online providers.
 
-## Credential handling
+## Not yet implemented
 
-- `SecureTokenStore` encrypts access and refresh tokens with an AES-GCM key held by Android Keystore.
-- Tokens are not part of `AccountSession` and must never be printed to logs, crash reports, analytics, or UI.
-- OAuth implementations must use the provider's supported authorization flow, state validation, PKCE where supported, and exact redirect URI registration.
-- Client applications must not embed confidential OAuth client secrets.
-- Local/offline profiles are not authenticated online accounts and may not access services requiring Microsoft authentication.
+Microsoft and Ely.by OAuth flows are not connected. Local/offline profiles are not authenticated online accounts and cannot access services that require Microsoft authentication.
 
-## Current status
+## Security requirements
 
-The encrypted token store and local-profile generator are implemented. Microsoft and Ely.by network/OAuth flows are interfaces only and are not yet connected. No online sign-in is claimed to work in this milestone.
+- Keep access and refresh tokens out of AccountSession, UI, logs, crash reports, and analytics.
+- OAuth must validate state, use PKCE where supported, and use exact registered redirect URIs.
+- Never embed confidential OAuth client secrets in the APK.
+- Use HTTPS and validate provider responses before persisting credentials.
