@@ -34,6 +34,7 @@ import com.nebula.launcher.accounts.LocalAccountProvider;
 import com.nebula.launcher.accounts.LocalProfileNames;
 import com.nebula.launcher.catalog.ModrinthClient;
 import com.nebula.launcher.catalog.CatalogImageLoader;
+import com.nebula.launcher.catalog.NebulaModInstaller;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -479,8 +480,18 @@ public final class MainActivity extends Activity {
                 }
             }
         }));
-        Button official=button("Abrir página oficial de Modrinth ↗");
-        LinearLayout.LayoutParams officialParams=match();officialParams.topMargin=dp(12);content.addView(official,officialParams);
+        Button install=button("⬇ Instalar en Minecraft");
+        LinearLayout.LayoutParams installParams=match();installParams.topMargin=dp(12);content.addView(install,installParams);
+        install.setOnClickListener(v -> {
+            String loader = preferences.getString(KEY_LOADER, "forge");
+            if ("any".equals(loader)) {
+                Toast.makeText(this, "Selecciona un cargador concreto en Ajustes para instalar este mod.", Toast.LENGTH_LONG).show();
+                return;
+            }
+            NebulaModInstaller.install(this, project.id, selectedVersion(), loader);
+        });
+        Button official=button("Ver página del proyecto ↗");
+        LinearLayout.LayoutParams officialParams=match();officialParams.topMargin=dp(8);content.addView(official,officialParams);
         official.setOnClickListener(v->openProject(project.slug));
     }
 
