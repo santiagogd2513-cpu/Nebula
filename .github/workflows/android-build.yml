@@ -15,6 +15,7 @@ concurrency:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,13 +48,17 @@ jobs:
         run: gradle --no-daemon :app:testDebugUnitTest -PnebulaVersionName=${{ steps.version.outputs.name }} -PnebulaVersionCode=${{ steps.version.outputs.code }}
       - name: Build APK
         run: gradle --no-daemon :app:assembleDebug -PnebulaVersionName=${{ steps.version.outputs.name }} -PnebulaVersionCode=${{ steps.version.outputs.code }}
+      - name: Verify APK and create SHA-256 checksum
+        run: |
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          sha256sum app/build/outputs/apk/debug/app-debug.apk > app/build/outputs/apk/debug/app-debug.apk.sha256
       - name: Publish newest APK to GitHub Releases
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
           VERSION: ${{ steps.version.outputs.name }}
         run: |
-          gh release create "$TAG" app/build/outputs/apk/debug/app-debug.apk \
+          gh release create "$TAG" app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/app-debug.apk.sha256 \
             --repo "$GITHUB_REPOSITORY" \
             --title "Nebula $VERSION" \
             --notes "Automated Android debug build from commit $GITHUB_SHA." \
@@ -62,5 +67,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nebula-${{ steps.version.outputs.name }}-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/app-debug.apk.sha256
           if-no-files-found: error
