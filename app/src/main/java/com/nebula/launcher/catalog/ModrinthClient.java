@@ -97,7 +97,6 @@ public final class ModrinthClient implements AutoCloseable {
 
     private void performSearch(String query, String projectType, String gameVersion, String loader,
                                int offset, Callback callback) {
-        HttpURLConnection connection = null;
         try {
             if (!("mod".equals(projectType)||"modpack".equals(projectType)||"shader".equals(projectType)||"resourcepack".equals(projectType)))
                 throw new IllegalArgumentException("Tipo de contenido no válido");
@@ -112,13 +111,12 @@ public final class ModrinthClient implements AutoCloseable {
                 facets.put(new JSONArray().put("categories:"+loader));
             String encodedFacets=URLEncoder.encode(facets.toString(),StandardCharsets.UTF_8.name());
             String encodedQuery=URLEncoder.encode(query==null?"":query.trim(),StandardCharsets.UTF_8.name());
-            JSONObject response=getJson(API+"/search?query="+encodedQuery+"&facets="+encodedFacets+"&limit=30&offset="+Math.max(0,offset));
+            JSONObject response=getJson(API+"/search?query="+encodedQuery+"&facets="+encodedFacets+"&limit=30&offset="+offset);
             JSONArray hits=response.optJSONArray("hits");
             List<Project> projects=new ArrayList<>();
             if(hits!=null) for(int i=0;i<hits.length();i++){JSONObject item=hits.optJSONObject(i);if(item!=null)projects.add(new Project(item));}
             callback.onResult(projects,response.optInt("total_hits",projects.size()),null);
         } catch(Exception error){callback.onResult(new ArrayList<>(),0,error.getMessage()==null?"Error de conexión con Modrinth":error.getMessage());}
-        finally{if(connection!=null)connection.disconnect();}
     }
 
     public void getProject(String projectId, DetailsCallback callback) {
@@ -160,15 +158,10 @@ public final class ModrinthClient implements AutoCloseable {
         }); } catch(RejectedExecutionException ignored){callback.onResult(null,"El catálogo se está cerrando.");}
     }
 
-    private JSONObject getJson(String address) throws Exception {
-        return new JSONObject(readResponse(address));
-    }
+    private JSONObject getJson(String address) throws Exception { return new JSONObject(readResponse(address)); }
+    private JSONArray getArray(String address) throws Exception { return new JSONArray(readResponse(address)); }
 
-    private JSONArray getArray(String address) throws Exception {
-        return new JSONArray(readResponse(address));
-    }
-
-    /** Shared bounded HTTP reader prevents unexpectedly large API responses consuming heap. */
+    /** Bounded response reader; HttpURLConnection handles transparent gzip negotiation itself. */
     private String readResponse(String address) throws Exception {
         HttpURLConnection connection = (HttpURLConnection) new URL(address).openConnection();
         try {
@@ -178,38 +171,25 @@ public final class ModrinthClient implements AutoCloseable {
             connection.setUseCaches(true);
             connection.setInstanceFollowRedirects(false);
             connection.setRequestProperty("Accept", "application/json");
-            connection.setRequestProperty("Accept-Encoding", "gzip");
+            // Do not set Accept-Encoding manually: Android's HttpURLConnection then safely
+            // negotiates and transparently decompresses gzip responses.
             connection.setRequestProperty("User-Agent", "NebulaLauncher/0.3.2 (Android)");
-
             int status = connection.getResponseCode();
-            if (status != HttpURLConnection.HTTP_OK) {
-                throw new IllegalStateException(httpError(status));
-            }
-
+            if (status != HttpURLConnection.HTTP_OK) throw new IllegalStateException(httpError(status));
             int declaredLength = connection.getContentLength();
-            if (declaredLength > MAX_RESPONSE_BYTES) {
-                throw new IllegalStateException("La respuesta del catálogo es demasiado grande.");
-            }
-
-            StringBuilder body = new StringBuilder(Math.max(256,
-                    declaredLength > 0 ? declaredLength : 1024));
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    connection.getInputStream(), StandardCharsets.UTF_8), 8192)) {
+            if (declaredLength > MAX_RESPONSE_BYTES) throw new IllegalStateException("La respuesta del catálogo es demasiado grande.");
+            StringBuilder body = new StringBuilder(Math.max(256, declaredLength > 0 ? declaredLength : 1024));
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8), 8192)) {
                 char[] buffer = new char[4096];
-                int count;
-                int total = 0;
+                int count, total = 0;
                 while ((count = reader.read(buffer)) != -1) {
                     total += count;
-                    if (total > MAX_RESPONSE_BYTES) {
-                        throw new IllegalStateException("La respuesta del catálogo supera el límite permitido.");
-                    }
+                    if (total > MAX_RESPONSE_BYTES) throw new IllegalStateException("La respuesta del catálogo supera el límite permitido.");
                     body.append(buffer, 0, count);
                 }
             }
             return body.toString();
-        } finally {
-            connection.disconnect();
-        }
+        } finally { connection.disconnect(); }
     }
 
     private String httpError(int status) {
