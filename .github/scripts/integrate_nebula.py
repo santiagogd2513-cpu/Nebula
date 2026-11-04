@@ -203,3 +203,63 @@ if "nebula_optimization_title" not in strings_source:
     strings.write_text(strings_source)
 
 print("Nebula runtime shell and optimization settings entry integrated.")
+
+
+# Rebrand the engine's main menu and all settings category labels for Nebula.
+# Keep the upstream view IDs and click handlers so its real install/launch pipeline remains intact.
+import xml.etree.ElementTree as ET
+
+for values_file in [
+    root / "app_mojo/src/main/res/values/strings.xml",
+    root / "app_mojo/src/main/res/values-es/strings.xml",
+]:
+    if not values_file.exists():
+        continue
+    tree = ET.parse(values_file)
+    resources = tree.getroot()
+    replacements = {
+        "mcl_tab_wiki": "Guía de Nebula",
+        "mcl_button_social_media": "Comunidad",
+        "mcl_option_customcontrol": "Controles de Minecraft",
+        "main_install_jar_file": "Instalar archivo Java (.jar)",
+        "main_share_logs": "Compartir registro de Minecraft",
+        "mcl_button_open_directory": "Archivos de Minecraft",
+        "main_play": "JUGAR",
+        "preference_video_title": "Gráficos y rendimiento",
+        "preference_video_description": "Resolución, renderizador y opciones visuales",
+        "preference_control_title": "Controles",
+        "preference_control_description": "Personaliza los controles táctiles y el gamepad",
+        "preference_java_title": "Java y memoria",
+        "preference_java_description": "Memoria, argumentos y entorno Java",
+        "preference_misc_title": "Ajustes generales",
+        "preference_misc_description": "Opciones generales de Nebula",
+        "preference_experimental_title": "Funciones avanzadas",
+        "preference_experimental_description": "Opciones experimentales del motor",
+        "preference_category_main_categories": "Personalización de Nebula",
+    }
+    for element in resources.findall("string"):
+        key = element.attrib.get("name")
+        if key in replacements:
+            element.text = replacements[key]
+    ET.indent(tree, space="    ")
+    tree.write(values_file, encoding="utf-8", xml_declaration=True)
+
+# Keep both portrait and landscape launcher menus aligned with Nebula branding.
+# The IDs are deliberately preserved because MainMenuFragment binds to them.
+for layout_path in [
+    root / "app_mojo/src/main/res/layout/fragment_launcher.xml",
+    root / "app_mojo/src/main/res/layout-land/fragment_launcher.xml",
+]:
+    if not layout_path.exists():
+        raise SystemExit("Missing launcher main-menu layout: " + str(layout_path))
+    layout = layout_path.read_text()
+    layout = layout.replace('@string/mcl_tab_wiki', '"Guía de Nebula"')
+    layout = layout.replace('@string/mcl_button_social_media', '"Comunidad"')
+    layout = layout.replace('@string/mcl_option_customcontrol', '"Controles de Minecraft"')
+    layout = layout.replace('@string/main_install_jar_file', '"Instalar archivo Java (.jar)"')
+    layout = layout.replace('@string/main_share_logs', '"Compartir registro de Minecraft"')
+    layout = layout.replace('@string/mcl_button_open_directory', '"Archivos de Minecraft"')
+    layout = layout.replace('@string/main_play', '"JUGAR"')
+    layout_path.write_text(layout)
+
+print("Nebula main menu and settings labels rebranded in portrait and landscape.")
