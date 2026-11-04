@@ -165,10 +165,6 @@ public final class MainActivity extends Activity {
         };
         search.setOnClickListener(v->{offset[0]=0;loadPage[0].run();});
         more.setOnClickListener(v->loadPage[0].run());
-        type.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
-            @Override public void onItemSelected(android.widget.AdapterView<?> parent,View view,int position,long id){offset[0]=0;loadPage[0].run();}
-            @Override public void onNothingSelected(android.widget.AdapterView<?> parent){}
-        });
         loadPage[0].run();
         TextView note=text("Las fichas muestran datos oficiales de Modrinth. La instalación automática y la resolución segura de archivos y dependencias todavía no están habilitadas.",12,MUTED,false);
         LinearLayout.LayoutParams noteParams=match();noteParams.topMargin=dp(14);content.addView(note,noteParams);
@@ -206,7 +202,8 @@ public final class MainActivity extends Activity {
         LinearLayout heading=new LinearLayout(this);heading.setOrientation(LinearLayout.VERTICAL);
         LinearLayout.LayoutParams headingParams=new LinearLayout.LayoutParams(0,-2,1);headingParams.leftMargin=dp(14);hero.addView(heading,headingParams);
         heading.addView(text(project.title,23,TEXT,true));
-        heading.addView(text(project.author.isEmpty()?"Autor por consultar":"Por "+project.author,13,BLUE,true));
+        TextView authorLabel=text(project.author.isEmpty()?"Cargando autores…":"Por "+project.author,13,BLUE,true);
+        heading.addView(authorLabel);
         heading.addView(text(formatDownloads(project.downloads)+" descargas",11,MUTED,false));
         card("Descripción",project.description);
         LinearLayout info=new LinearLayout(this);info.setOrientation(LinearLayout.VERTICAL);
@@ -222,7 +219,7 @@ public final class MainActivity extends Activity {
             info.removeAllViews();gallery.removeAllViews();
             if(error!=null){info.addView(text("No se pudieron cargar los detalles completos: "+error,13,MUTED,false));return;}
             String authors=details.authors.isEmpty()?(project.author.isEmpty()?"Autor no especificado":project.author):android.text.TextUtils.join(", ",details.authors);
-            info.addView(text("Autor(es): "+authors,13,BLUE,true));
+            authorLabel.setText("Por "+authors);
             info.addView(text("Dependencias",18,TEXT,true));
             if(details.dependencies.isEmpty())info.addView(text("No requiere dependencias declaradas.",13,MUTED,false));
             else for(ModrinthClient.Dependency dep:details.dependencies){
