@@ -127,10 +127,16 @@ public final class ModrinthClient implements AutoCloseable {
                 if(projectId==null||!projectId.matches("[A-Za-z0-9_-]{3,64}")) throw new IllegalArgumentException("Identificador de proyecto no válido");
                 JSONObject json=getJson(API+"/project/"+projectId);
                 ProjectDetails details=new ProjectDetails(json);
-                for(Dependency dependency:details.dependencies) {
-                    if(!dependency.projectId.isEmpty()) {
-                        try { dependency.title=getJson(API+"/project/"+dependency.projectId).optString("title", dependency.projectId); }
-                        catch(Exception ignored) { dependency.title=dependency.projectId; }
+                for (Dependency dependency : details.dependencies) {
+                    String dependencyProjectId = dependency.projectId;
+                    if (dependencyProjectId.isEmpty() && !dependency.versionId.isEmpty()
+                            && dependency.versionId.matches("[A-Za-z0-9_-]{3,64}")) {
+                        try { dependencyProjectId = getJson(API + "/version/" + dependency.versionId).optString("project_id", ""); }
+                        catch (Exception ignored) { /* Keep the version identifier as a fallback label. */ }
+                    }
+                    if (!dependencyProjectId.isEmpty() && dependencyProjectId.matches("[A-Za-z0-9_-]{3,64}")) {
+                        try { dependency.title = getJson(API + "/project/" + dependencyProjectId).optString("title", dependencyProjectId); }
+                        catch (Exception ignored) { dependency.title = dependencyProjectId; }
                     }
                 }
                 if(!details.team.isEmpty()) {
