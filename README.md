@@ -10,7 +10,8 @@ The Android app currently includes:
 - Modrinth v2 search for mods, modpacks, shaders, and resource packs.
 - Minecraft version and loader preferences saved on-device.
 - Loader-aware catalog filtering (Forge/Fabric/Quilt/NeoForge applies to mods and modpacks; shaders and resource packs do not receive a loader facet).
-- Project result cards that open the corresponding Modrinth project page.
+- A paginated, popular-first Modrinth catalog with project icons, names, and short descriptions.
+- In-app project details with authors, declared dependencies, full project description, and optional gallery images when the project supplies them.
 - Local/offline player profiles that can be created, listed, and removed.
 - Encrypted token storage based on Android Keystore for future online account providers.
 - Automated unit tests, debug APK builds, and GitHub Releases.
