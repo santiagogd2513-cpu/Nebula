@@ -219,8 +219,9 @@ public final class MainActivity extends Activity {
         prepare.setOnClickListener(v -> {
             String version = versions.getSelectedItem() == null ? selectedVersion[0] : versions.getSelectedItem().toString();
             preferences.edit().putString(KEY_INSTALL_VERSION, version).putString(KEY_INSTALL_TYPE, pendingInstallType).apply();
-            selected.setText("Selección guardada: Minecraft " + version + " · " + pendingInstallType);
-            Toast.makeText(this, "Selección de instalación guardada.", Toast.LENGTH_SHORT).show();
+            selected.setText("Selección guardada: Minecraft " + version + " · " + pendingInstallType
+                    + ". Se abrirá el motor de MojoLauncher para completar la instalación real.");
+            openMinecraftRuntime();
         });
         Runnable updateSelection = () -> {
             String version = versions.getSelectedItem() == null ? selectedVersion[0] : versions.getSelectedItem().toString();
@@ -250,7 +251,7 @@ public final class MainActivity extends Activity {
     private void selectInstallType(String type, String label) {
         pendingInstallType = type;
         preferences.edit().putString(KEY_INSTALL_TYPE, type).apply();
-        Toast.makeText(this, label + " seleccionado. El instalador completo está pendiente de integrar.", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, label + " seleccionado. Pulsa Preparar instalación para abrir el motor de Minecraft.", Toast.LENGTH_SHORT).show();
     }
 
     private void fetchMinecraftVersions(Spinner spinner, String[] selectedVersion, Runnable onLoaded) {
