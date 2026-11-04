@@ -134,14 +134,18 @@ public final class ModrinthClient implements AutoCloseable {
                     }
                 }
                 if(!details.team.isEmpty()) {
-                    JSONArray members=getArray(API+"/team/"+details.team);
-                    for(int i=0;i<members.length();i++){
-                        JSONObject member=members.optJSONObject(i);
-                        if(member!=null){
-                            JSONObject user=member.optJSONObject("user");
-                            String username=user==null?"":user.optString("username","");
-                            if(!username.isEmpty()&&!details.authors.contains(username))details.authors.add(username);
+                    try {
+                        JSONArray members=getArray(API+"/team/"+details.team);
+                        for(int i=0;i<members.length();i++){
+                            JSONObject member=members.optJSONObject(i);
+                            if(member!=null){
+                                JSONObject user=member.optJSONObject("user");
+                                String username=user==null?"":user.optString("username","");
+                                if(!username.isEmpty()&&!details.authors.contains(username))details.authors.add(username);
+                            }
                         }
+                    } catch(Exception ignored) {
+                        // Keep project description, gallery, and dependencies available if team metadata fails.
                     }
                 }
                 callback.onResult(details,null);

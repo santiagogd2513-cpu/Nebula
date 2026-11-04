@@ -255,7 +255,9 @@ public final class MainActivity extends Activity {
                     ImageView picture=new ImageView(this);picture.setAdjustViewBounds(true);picture.setScaleType(ImageView.ScaleType.FIT_CENTER);
                     LinearLayout.LayoutParams p=match();p.topMargin=dp(10);gallery.addView(picture,p);
                     imageLoader.load(image.url,picture,Color.rgb(18,29,52));
-                    if(!image.title.isEmpty())gallery.addView(text(image.title,12,MUTED,false));
+                    if(image.featured)gallery.addView(text("Imagen destacada",11,BLUE,true));
+                    if(!image.title.isEmpty())gallery.addView(text(image.title,12,TEXT,true));
+                    if(!image.description.isEmpty())gallery.addView(text(image.description,12,MUTED,false));
                 }
             }
         }));
