@@ -131,11 +131,11 @@ public final class MainActivity extends Activity {
         base("Inicio");
         card("Bienvenido a Nebula",
                 "Tu espacio para preparar Minecraft Java en Android. La interfaz, el catálogo y los perfiles locales ya tienen funciones iniciales.");
-        Button play = button("Abrir motor de Minecraft");
+        Button play = button("Entrar a Minecraft");
         play.setEnabled(true);
         play.setOnClickListener(v -> openMinecraftRuntime());
         content.addView(play, match());
-        TextView runtime = text("Para ejecutar Minecraft, Nebula abre el motor completo de MojoLauncher como componente independiente. Instala también el APK de MojoLauncher Full que acompaña esta compilación; desde allí podrás instalar Minecraft Vanilla 1.20.1 y lanzarlo.", 12, MUTED, false);
+        TextView runtime = text("Nebula ya incluye el motor de MJLauncher en esta misma aplicación. Desde el motor puedes instalar y ejecutar Minecraft Vanilla, Forge, Fabric y otros cargadores compatibles.", 12, MUTED, false);
         LinearLayout.LayoutParams runtimeParams = match();
         runtimeParams.topMargin = dp(8);
         content.addView(runtime, runtimeParams);
@@ -199,7 +199,7 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams prepareParams = match();
         prepareParams.topMargin = dp(10);
         content.addView(prepare, prepareParams);
-        content.addView(text("La selección se guarda en Nebula y se abre MojoLauncher, que funciona como aplicación independiente. Allí debes elegir e instalar Minecraft Vanilla 1.20.1; la selección de esta pantalla todavía no se transfiere automáticamente al motor.", 12, MUTED, false), match());
+        content.addView(text("La selección queda guardada en Nebula. El motor integrado administra la instalación y el lanzamiento de Minecraft y sus cargadores compatibles.", 12, MUTED, false), match());
 
         final String[] selectedVersion = {preferences.getString(KEY_INSTALL_VERSION, "1.20.1")};
         pendingInstallType = preferences.getString(KEY_INSTALL_TYPE, "vanilla");
@@ -207,7 +207,7 @@ public final class MainActivity extends Activity {
             String version = versions.getSelectedItem() == null ? selectedVersion[0] : versions.getSelectedItem().toString();
             preferences.edit().putString(KEY_INSTALL_VERSION, version).putString(KEY_INSTALL_TYPE, pendingInstallType).apply();
             selected.setText("Selección guardada: Minecraft " + version + " · " + pendingInstallType
-                    + ". Se abrirá el motor de MojoLauncher para completar la instalación real.");
+                    + ". Abre el motor integrado para completar la instalación.");
             openMinecraftRuntime();
         });
         Runnable updateSelection = () -> {
@@ -238,7 +238,7 @@ public final class MainActivity extends Activity {
     private void selectInstallType(String type, String label) {
         pendingInstallType = type;
         preferences.edit().putString(KEY_INSTALL_TYPE, type).apply();
-        Toast.makeText(this, label + " seleccionado. Pulsa Preparar instalación para abrir el motor de Minecraft.", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, label + " seleccionado. Pulsa Preparar instalación para continuar en el motor integrado.", Toast.LENGTH_SHORT).show();
     }
 
     private void fetchMinecraftVersions(Spinner spinner, String[] selectedVersion, Runnable onLoaded) {
