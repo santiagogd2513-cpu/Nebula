@@ -4,6 +4,8 @@
     <application
         android:allowBackup="false"
         android:label="Nebula"
+        android:icon="@drawable/nebula_launcher_foreground"
+        android:roundIcon="@drawable/nebula_launcher_foreground"
         android:theme="@android:style/Theme.Material.NoActionBar"
         android:usesCleartextTraffic="false"
         android:supportsRtl="true">

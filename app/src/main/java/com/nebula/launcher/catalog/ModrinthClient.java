@@ -191,7 +191,7 @@ public final class ModrinthClient implements AutoCloseable {
     }
 
     private String httpError(int status) {
-        if (status == HttpURLConnection.HTTP_TOO_MANY_REQUESTS) return "Modrinth está limitando las consultas. Espera un momento y vuelve a intentarlo.";
+        if (status == 429) return "Modrinth está limitando las consultas. Espera un momento y vuelve a intentarlo.";
         if (status >= 500) return "El servicio de Modrinth no está disponible temporalmente (HTTP " + status + ").";
         if (status == HttpURLConnection.HTTP_NOT_FOUND) return "El proyecto o recurso ya no está disponible.";
         return "Modrinth respondió HTTP " + status;
