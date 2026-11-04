@@ -280,41 +280,87 @@ public final class MainActivity extends Activity {
 
     private void showAccounts() {
         base("Cuentas");
-        card("Perfiles locales", "Crea perfiles sin conexión para preparar la interfaz del launcher. No son cuentas autenticadas y no permiten acceder a servicios que exigen inicio de sesión oficial.");
+        card("Tus cuentas de Minecraft", "Administra perfiles locales y, cuando estén integrados, inicia sesión con proveedores compatibles.");
+        Button create = button("+ Crear cuenta");
+        LinearLayout.LayoutParams createParams = match();
+        createParams.bottomMargin = dp(12);
+        content.addView(create, createParams);
+        create.setOnClickListener(v -> showCreateAccountMenu());
+
+        content.addView(text("Perfiles guardados", 18, TEXT, true), match());
+        LinearLayout profiles = new LinearLayout(this);
+        profiles.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams profilesParams = match();
+        profilesParams.topMargin = dp(10);
+        content.addView(profiles, profilesParams);
+        renderLocalProfiles(profiles);
+
+        card("Inicio de sesión en línea", "Microsoft y Ely.by aparecerán en el menú de creación cuando sus flujos OAuth seguros estén implementados. Por ahora no se aceptan contraseñas ni tokens manuales.");
+        card("Seguridad", "Los tokens de futuras sesiones se guardarán cifrados con Android Keystore. Los perfiles locales no autentican contra los servidores oficiales.");
+    }
+
+    private void showCreateAccountMenu() {
+        base("Crear cuenta");
+        card("Elige el tipo de cuenta", "Puedes crear ahora un perfil local sin conexión. Los proveedores en línea se habilitarán cuando sus procesos oficiales de autenticación estén completos.");
+        Button local = button("Crear perfil local");
+        LinearLayout.LayoutParams localParams = match();
+        localParams.bottomMargin = dp(10);
+        content.addView(local, localParams);
+        local.setOnClickListener(v -> showCreateLocalProfile());
+
+        Button microsoft = button("Microsoft · Próximamente");
+        microsoft.setEnabled(false);
+        LinearLayout.LayoutParams microsoftParams = match();
+        microsoftParams.bottomMargin = dp(10);
+        content.addView(microsoft, microsoftParams);
+
+        Button ely = button("Ely.by · Próximamente");
+        ely.setEnabled(false);
+        content.addView(ely, match());
+
+        Button back = button("Volver a Cuentas");
+        LinearLayout.LayoutParams backParams = match();
+        backParams.topMargin = dp(18);
+        content.addView(back, backParams);
+        back.setOnClickListener(v -> showAccounts());
+    }
+
+    private void showCreateLocalProfile() {
+        base("Perfil local");
+        card("Crear perfil sin conexión", "Elige un nombre de jugador de Minecraft. Este perfil sirve para preparar la interfaz, pero no verifica una cuenta oficial ni permite entrar a servidores que exijan autenticación.");
 
         EditText playerName = edit("Nombre de jugador (3–16 caracteres)");
         playerName.setSingleLine(true);
         content.addView(playerName, match());
-        Button add = button("Añadir perfil local");
+
+        Button add = button("Guardar perfil local");
         LinearLayout.LayoutParams addParams = match();
-        addParams.topMargin = dp(9);
+        addParams.topMargin = dp(10);
         content.addView(add, addParams);
-
-        LinearLayout profiles = new LinearLayout(this);
-        profiles.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout.LayoutParams profilesParams = match();
-        profilesParams.topMargin = dp(16);
-        content.addView(profiles, profilesParams);
-        renderLocalProfiles(profiles);
-
         add.setOnClickListener(v -> {
             String name = playerName.getText().toString().trim();
             try {
                 AccountSession session = new LocalAccountProvider().create(name);
-                Set<String> names = LocalProfileNames.withAdded(preferences.getStringSet(KEY_LOCAL_NAMES, Collections.emptySet()), session.getPlayerName());
+                Set<String> names = LocalProfileNames.withAdded(
+                        preferences.getStringSet(KEY_LOCAL_NAMES, Collections.emptySet()),
+                        session.getPlayerName());
                 SharedPreferences.Editor editor = preferences.edit().putStringSet(KEY_LOCAL_NAMES, names);
-                if (preferences.getString(KEY_ACTIVE_NAME, "").isEmpty()) editor.putString(KEY_ACTIVE_NAME, session.getPlayerName());
+                if (preferences.getString(KEY_ACTIVE_NAME, "").isEmpty()) {
+                    editor.putString(KEY_ACTIVE_NAME, session.getPlayerName());
+                }
                 editor.apply();
-                playerName.setText("");
-                renderLocalProfiles(profiles);
-                Toast.makeText(this, "Perfil local añadido.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Perfil local creado.", Toast.LENGTH_SHORT).show();
+                showAccounts();
             } catch (IllegalArgumentException error) {
                 playerName.setError(error.getMessage());
             }
         });
 
-        card("Cuentas en línea", "Microsoft y Ely.by todavía no están habilitadas. Se integrarán mediante OAuth seguro cuando estén configurados y probados sus flujos.");
-        card("Protección", "Los tokens se cifran con Android Keystore. No se guardan contraseñas ni se muestran credenciales en pantalla.");
+        Button back = button("Cancelar");
+        LinearLayout.LayoutParams backParams = match();
+        backParams.topMargin = dp(8);
+        content.addView(back, backParams);
+        back.setOnClickListener(v -> showCreateAccountMenu());
     }
 
     private void renderLocalProfiles(LinearLayout target) {
