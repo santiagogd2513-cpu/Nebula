@@ -27,8 +27,10 @@ public final class SecureTokenStore {
     }
 
     public synchronized void save(String accountId, String accessToken, String refreshToken) throws GeneralSecurityException, IOException {
-        if (accountId == null || accountId.trim().isEmpty()) throw new IllegalArgumentException("accountId is required");
-        String payload = (accessToken == null ? "" : accessToken) + "\n" + (refreshToken == null ? "" : refreshToken);
+        CredentialInputValidator.validateAccountId(accountId);
+        CredentialInputValidator.validateAccessToken(accessToken);
+        CredentialInputValidator.validateRefreshToken(refreshToken);
+        String payload = accessToken + "\n" + (refreshToken == null ? "" : refreshToken);
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey());
         byte[] encrypted = cipher.doFinal(payload.getBytes(StandardCharsets.UTF_8));
@@ -37,6 +39,7 @@ public final class SecureTokenStore {
     }
 
     public synchronized String[] read(String accountId) throws GeneralSecurityException, IOException {
+        CredentialInputValidator.validateAccountId(accountId);
         String packed = preferences.getString(accountId, null);
         if (packed == null) return null;
         String[] parts = packed.split(":", 2);
@@ -52,6 +55,7 @@ public final class SecureTokenStore {
     }
 
     public synchronized void delete(String accountId) throws IOException {
+        CredentialInputValidator.validateAccountId(accountId);
         if (!preferences.edit().remove(accountId).commit()) throw new IOException("Could not remove account credentials");
     }
 
