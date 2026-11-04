@@ -131,6 +131,60 @@ jobs:
         with:
           gradle-version: '8.13'
 
+      - name: Patch Android non-final resource IDs in legacy AWTActivity
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("vendor/MojoLauncher/app_mojo/src/main/java/git/artdeell/mojo/awt/AWTActivity.java")
+          s = p.read_text()
+          old = '''        switch (v.getId()) {
+            case R.id.installmod_mouse_pri:
+                Platform.sendMouseButtonEvent(MotionEvent.BUTTON_PRIMARY, isDown ? 1 : 0, CallbackBridge.getCurrentMods());
+                break;
+                
+            case R.id.installmod_mouse_sec:
+                Platform.sendMouseButtonEvent(MotionEvent.BUTTON_SECONDARY, isDown ? 1 : 0, CallbackBridge.getCurrentMods());
+                break;
+        }
+        if(isDown) switch(v.getId()) {
+            case R.id.installmod_window_moveup:
+                AWTBridge.nativeMoveWindow(0, -10);
+                break;
+            case R.id.installmod_window_movedown:
+                AWTBridge.nativeMoveWindow(0, 10);
+                break;
+            case R.id.installmod_window_moveleft:
+                AWTBridge.nativeMoveWindow(-10, 0);
+                break;
+            case R.id.installmod_window_moveright:
+                AWTBridge.nativeMoveWindow(10, 0);
+                break;
+        }
+'''
+          new = '''        int viewId = v.getId();
+        if (viewId == R.id.installmod_mouse_pri) {
+            Platform.sendMouseButtonEvent(MotionEvent.BUTTON_PRIMARY, isDown ? 1 : 0, CallbackBridge.getCurrentMods());
+        } else if (viewId == R.id.installmod_mouse_sec) {
+            Platform.sendMouseButtonEvent(MotionEvent.BUTTON_SECONDARY, isDown ? 1 : 0, CallbackBridge.getCurrentMods());
+        }
+        if (isDown) {
+            if (viewId == R.id.installmod_window_moveup) {
+                AWTBridge.nativeMoveWindow(0, -10);
+            } else if (viewId == R.id.installmod_window_movedown) {
+                AWTBridge.nativeMoveWindow(0, 10);
+            } else if (viewId == R.id.installmod_window_moveleft) {
+                AWTBridge.nativeMoveWindow(-10, 0);
+            } else if (viewId == R.id.installmod_window_moveright) {
+                AWTBridge.nativeMoveWindow(10, 0);
+            }
+        }
+'''
+          if old not in s:
+              raise SystemExit("Expected AWTActivity switch block not found; refusing unsafe patch")
+          p.write_text(s.replace(old, new, 1))
+          print("Patched AWTActivity: resource IDs are compared at runtime, not used as Java case constants.")
+          PY
+
       - name: Compile MojoLauncher application from Nebula root
         run: gradle --no-daemon :app_mojo:assembleFullDebug
 
