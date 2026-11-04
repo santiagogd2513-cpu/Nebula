@@ -45,4 +45,5 @@ jobs:
 
       - name: Verify upstream APK
         run: |
-          test -s vendor/MojoLauncher/app_mojo/build/outputs/apk/full/debug/app_mojo-full-debug.apk || find vendor/MojoLauncher/app_mojo/build/outputs/apk -name '*.apk' -type f -size +0c
+          APK_COUNT=$(find vendor/MojoLauncher/app_mojo/build/outputs/apk -name '*.apk' -type f -size +0c | wc -l)
+          test "$APK_COUNT" -ge 1
