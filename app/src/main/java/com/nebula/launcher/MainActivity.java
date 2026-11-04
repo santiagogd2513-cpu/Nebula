@@ -67,7 +67,6 @@ public final class MainActivity extends Activity {
         preferences = getSharedPreferences(PREFS, MODE_PRIVATE);
         getWindow().setStatusBarColor(BG);
         getWindow().setNavigationBarColor(BG);
-        getWindow().getDecorView().setSystemUiVisibility(0);
         showHome();
     }
 
@@ -212,7 +211,7 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams prepareParams = match();
         prepareParams.topMargin = dp(10);
         content.addView(prepare, prepareParams);
-        content.addView(text("La descarga e instalación completa aún no están habilitadas: falta integrar MojoLauncher y el instalador de perfiles. Esta pantalla no descargará archivos incompletos ni afirmará que Minecraft está instalado.", 12, MUTED, false), match());
+        content.addView(text("La selección se guarda en Nebula y se abre MojoLauncher, que funciona como aplicación independiente. Allí debes elegir e instalar Minecraft Vanilla 1.20.1; la selección de esta pantalla todavía no se transfiere automáticamente al motor.", 12, MUTED, false), match());
 
         final String[] selectedVersion = {preferences.getString(KEY_INSTALL_VERSION, "1.20.1")};
         pendingInstallType = preferences.getString(KEY_INSTALL_TYPE, "vanilla");
