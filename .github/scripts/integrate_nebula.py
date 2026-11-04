@@ -104,12 +104,12 @@ shutil.copyfile(icon_source, icon_target)
 
 manifest = root / "app_mojo/src/main/AndroidManifest.xml"
 manifest_source = manifest.read_text()
-application_match = re.search(r"<application\\b[^>]*>", manifest_source)
+application_match = re.search(r"<application\b[^>]*>", manifest_source)
 if not application_match:
     raise SystemExit("Cannot locate Mojo application manifest element")
 application_tag = application_match.group(0)
-application_tag = re.sub(r'\\s+android:icon="[^"]*"', "", application_tag)
-application_tag = re.sub(r'\\s+android:roundIcon="[^"]*"', "", application_tag)
+application_tag = re.sub(r'\s+android:icon="[^"]*"', "", application_tag)
+application_tag = re.sub(r'\s+android:roundIcon="[^"]*"', "", application_tag)
 application_tag = application_tag[:-1] + ' android:icon="@drawable/nebula_launcher_icon" android:roundIcon="@drawable/nebula_launcher_icon">'
 manifest.write_text(manifest_source[:application_match.start()] + application_tag + manifest_source[application_match.end():])
 
