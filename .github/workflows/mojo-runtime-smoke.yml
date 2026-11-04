@@ -46,10 +46,7 @@ jobs:
         run: python3 .github/scripts/integrate_nebula.py
 
       - name: Run Nebula unit tests and compile the single full APK
-        working-directory: vendor/MojoLauncher
-        run: |
-          chmod +x gradlew
-          ./gradlew --no-daemon :app:testDebugUnitTest :app_mojo:assembleFullDebug
+        run: gradle --no-daemon :app:testDebugUnitTest :app_mojo:assembleFullDebug
 
       - name: Verify the unified APK
         id: apk
