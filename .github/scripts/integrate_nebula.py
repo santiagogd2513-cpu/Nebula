@@ -118,7 +118,7 @@ print("Nebula sources embedded; Mojo storage bootstrap retained; Nebula UI and a
 
 # Replace the legacy launcher chrome with a Nebula-branded shell. The upstream
 # fragments, installers, instance manager, preferences and launch pipeline remain
-// the real implementation; only the outer activity chrome is rebranded.
+# the real implementation; only the outer activity chrome is rebranded.
 launcher_layout = root / "app_mojo/src/main/res/layout/activity_mojo_ui.xml"
 launcher_layout.write_text("""<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout
