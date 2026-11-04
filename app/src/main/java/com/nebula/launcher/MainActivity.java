@@ -124,7 +124,9 @@ public final class MainActivity extends Activity {
 
     private void openMinecraftRuntime() {
         // The Mojo runtime is embedded in this same APK; never launch a second package.
-        startActivity(new Intent(this, git.artdeell.mojo.LauncherActivity.class));
+        Intent runtimeIntent = new Intent();
+        runtimeIntent.setClassName(this, "git.artdeell.mojo.LauncherActivity");
+        startActivity(runtimeIntent);
     }
 
     private void showHome() {
