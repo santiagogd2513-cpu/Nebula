@@ -14,6 +14,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -22,6 +23,7 @@ import android.widget.Toast;
 import com.nebula.launcher.accounts.AccountSession;
 import com.nebula.launcher.accounts.LocalAccountProvider;
 import com.nebula.launcher.catalog.ModrinthClient;
+import com.nebula.launcher.catalog.CatalogImageLoader;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,6 +45,7 @@ public final class MainActivity extends Activity {
 
     private LinearLayout content;
     private final ModrinthClient modrinth = new ModrinthClient();
+    private final CatalogImageLoader imageLoader = new CatalogImageLoader();
     private SharedPreferences preferences;
 
     @Override public void onCreate(Bundle state) {
@@ -56,6 +59,7 @@ public final class MainActivity extends Activity {
 
     @Override protected void onDestroy() {
         modrinth.close();
+        imageLoader.close();
         super.onDestroy();
     }
 
@@ -116,109 +120,139 @@ public final class MainActivity extends Activity {
 
     private void showLibrary() {
         base("Biblioteca");
-        card("Catálogo Modrinth", "Busca proyectos para tu versión y cargador seleccionados. Toca un resultado para abrir su página oficial.");
-
-        EditText query = edit("Buscar mods, shaders o paquetes");
+        card("Explora el catálogo", "Al entrar se muestran los proyectos populares. Usa los filtros para elegir mods, modpacks, shaders o paquetes de recursos.");
+        EditText query = edit("Buscar en todo Modrinth");
         content.addView(query, match());
-
         Spinner type = new Spinner(this);
         String[] labels = {"Mods", "Modpacks", "Shaders", "Resource packs"};
         String[] values = {"mod", "modpack", "shader", "resourcepack"};
         type.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, labels));
-        LinearLayout.LayoutParams typeParams = match();
-        typeParams.topMargin = dp(8);
-        content.addView(type, typeParams);
-
+        LinearLayout.LayoutParams typeParams = match(); typeParams.topMargin = dp(8); content.addView(type, typeParams);
         TextView filters = text("Minecraft " + selectedVersion() + " · " + selectedLoaderLabel(), 12, MUTED, false);
-        LinearLayout.LayoutParams filterParams = match();
-        filterParams.topMargin = dp(8);
-        content.addView(filters, filterParams);
-
-        LinearLayout results = new LinearLayout(this);
-        results.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout.LayoutParams resultParams = match();
-        resultParams.topMargin = dp(12);
-        content.addView(results, resultParams);
-
-        Button search = button("Buscar en Modrinth");
-        LinearLayout.LayoutParams searchParams = match();
-        searchParams.topMargin = dp(10);
-        content.addView(search, searchParams);
-
-        search.setOnClickListener(v -> {
-            final String version = selectedVersion();
-            final String loader = preferences.getString(KEY_LOADER, "forge");
-            final String projectType = values[type.getSelectedItemPosition()];
-            search.setEnabled(false);
-            results.removeAllViews();
-            results.addView(text("Buscando en Modrinth…", 13, MUTED, false));
-
-            modrinth.search(query.getText().toString(), projectType, version, loader, (projects, error) ->
-                    runOnUiThread(() -> {
-                        if (isFinishing() || isDestroyed()) return;
-                        search.setEnabled(true);
-                        results.removeAllViews();
-                        if (error != null) {
-                            results.addView(text("No se pudo completar la búsqueda: " + error, 13, MUTED, false));
-                            return;
-                        }
-                        results.addView(text(projects.size() + " resultados · " + version, 12, BLUE, true));
-                        if (projects.isEmpty()) {
-                            results.addView(text("No se encontraron proyectos con esos filtros.", 13, MUTED, false));
-                            return;
-                        }
-                        for (ModrinthClient.Project project : projects) {
-                            addProjectResult(results, project);
-                        }
-                    }));
+        LinearLayout.LayoutParams filterParams = match(); filterParams.topMargin = dp(8); content.addView(filters, filterParams);
+        LinearLayout results = new LinearLayout(this); results.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams resultParams = match(); resultParams.topMargin = dp(12); content.addView(results, resultParams);
+        Button search = button("Aplicar búsqueda y filtros");
+        LinearLayout.LayoutParams searchParams = match(); searchParams.topMargin = dp(10); content.addView(search, searchParams);
+        Button more = button("Cargar más proyectos");
+        more.setVisibility(View.GONE);
+        LinearLayout.LayoutParams moreParams = match(); moreParams.topMargin = dp(8); content.addView(more, moreParams);
+        final int[] offset = {0};
+        final int[] total = {0};
+        final boolean[] loading = {false};
+        Runnable[] loadPage = new Runnable[1];
+        loadPage[0] = () -> {
+            if (loading[0]) return;
+            loading[0] = true; search.setEnabled(false); more.setEnabled(false);
+            if (offset[0] == 0) results.removeAllViews();
+            results.addView(text(offset[0] == 0 ? "Cargando proyectos…" : "Cargando más proyectos…", 13, MUTED, false));
+            String version=selectedVersion(), loader=preferences.getString(KEY_LOADER,"forge");
+            String projectType=values[type.getSelectedItemPosition()];
+            modrinth.search(query.getText().toString(), projectType, version, loader, offset[0], (projects,totalHits,error) ->
+                runOnUiThread(() -> {
+                    if(isFinishing()||isDestroyed())return;
+                    loading[0]=false;search.setEnabled(true);more.setEnabled(true);
+                    if(offset[0]==0)results.removeAllViews();
+                    if(error!=null){results.addView(text("No se pudo cargar el catálogo: "+error,13,MUTED,false));more.setVisibility(View.GONE);return;}
+                    total[0]=totalHits;
+                    if(offset[0]==0)results.addView(text(totalHits+" proyectos disponibles · ordenados por relevancia",12,BLUE,true));
+                    if(projects.isEmpty()&&offset[0]==0){results.addView(text("No se encontraron proyectos con esos filtros.",13,MUTED,false));}
+                    for(ModrinthClient.Project project:projects)addProjectResult(results,project);
+                    offset[0]+=projects.size();
+                    more.setVisibility(offset[0]<total[0]&&!projects.isEmpty()?View.VISIBLE:View.GONE);
+                    if(offset[0]<total[0]&&!projects.isEmpty())more.setText("Cargar más · "+offset[0]+" de "+total[0]);
+                }));
+        };
+        search.setOnClickListener(v->{offset[0]=0;loadPage[0].run();});
+        more.setOnClickListener(v->loadPage[0].run());
+        type.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent,View view,int position,long id){offset[0]=0;loadPage[0].run();}
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent){}
         });
-
-        TextView note = text("Las búsquedas muestran metadatos. La instalación automática, resolución de dependencias y validación de archivos aún no están habilitadas.", 12, MUTED, false);
-        LinearLayout.LayoutParams noteParams = match();
-        noteParams.topMargin = dp(14);
-        content.addView(note, noteParams);
+        loadPage[0].run();
+        TextView note=text("Las fichas muestran datos oficiales de Modrinth. La instalación automática y la resolución segura de archivos y dependencias todavía no están habilitadas.",12,MUTED,false);
+        LinearLayout.LayoutParams noteParams=match();noteParams.topMargin=dp(14);content.addView(note,noteParams);
     }
 
     private void addProjectResult(LinearLayout results, ModrinthClient.Project project) {
-        LinearLayout item = new LinearLayout(this);
-        item.setOrientation(LinearLayout.VERTICAL);
-        item.setPadding(dp(14), dp(13), dp(14), dp(13));
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(PANEL);
-        background.setCornerRadius(dp(14));
-        background.setStroke(dp(1), Color.rgb(34, 58, 101));
-        item.setBackground(background);
-        item.setClickable(true);
-        item.setFocusable(true);
+        LinearLayout item=new LinearLayout(this);item.setOrientation(LinearLayout.HORIZONTAL);
+        item.setPadding(dp(12),dp(12),dp(12),dp(12));
+        GradientDrawable bg=new GradientDrawable();bg.setColor(PANEL);bg.setCornerRadius(dp(16));bg.setStroke(dp(1),Color.rgb(34,58,101));item.setBackground(bg);
+        ImageView icon=new ImageView(this);icon.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        LinearLayout.LayoutParams iconParams=new LinearLayout.LayoutParams(dp(64),dp(64));iconParams.rightMargin=dp(12);item.addView(icon,iconParams);
+        imageLoader.load(project.iconUrl,icon,Color.rgb(28,43,72));
+        LinearLayout details=new LinearLayout(this);details.setOrientation(LinearLayout.VERTICAL);
+        item.addView(details,new LinearLayout.LayoutParams(0,-2,1));
+        details.addView(text(project.title,17,TEXT,true));
+        TextView desc=text(project.description,12,MUTED,false);desc.setMaxLines(3);
+        LinearLayout.LayoutParams descParams=match();descParams.topMargin=dp(4);details.addView(desc,descParams);
+        TextView meta=text(formatDownloads(project.downloads)+" descargas · "+project.projectType,11,BLUE,false);
+        LinearLayout.LayoutParams metaParams=match();metaParams.topMargin=dp(6);details.addView(meta,metaParams);
+        item.setClickable(true);item.setFocusable(true);item.setOnClickListener(v->showProjectDetails(project));
+        LinearLayout.LayoutParams itemParams=match();itemParams.bottomMargin=dp(9);results.addView(item,itemParams);
+    }
 
-        item.addView(text(project.title, 15, TEXT, true));
-        TextView description = text(project.description, 12, MUTED, false);
-        description.setMaxLines(4);
-        LinearLayout.LayoutParams descriptionParams = match();
-        descriptionParams.topMargin = dp(5);
-        item.addView(description, descriptionParams);
-        TextView metadata = text(formatDownloads(project.downloads) + " descargas · " + project.projectType + " · Abrir proyecto ↗", 11, BLUE, false);
-        LinearLayout.LayoutParams metadataParams = match();
-        metadataParams.topMargin = dp(7);
-        item.addView(metadata, metadataParams);
-        item.setOnClickListener(v -> openProject(project.slug));
-
-        LinearLayout.LayoutParams itemParams = match();
-        itemParams.bottomMargin = dp(9);
-        results.addView(item, itemParams);
+    private void showProjectDetails(ModrinthClient.Project project) {
+        base("Proyecto");
+        Button back=button("← Volver a la Biblioteca");
+        content.addView(back,match());
+        back.setOnClickListener(v->showLibrary());
+        LinearLayout hero=new LinearLayout(this);hero.setOrientation(LinearLayout.HORIZONTAL);hero.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams heroParams=match();heroParams.topMargin=dp(16);content.addView(hero,heroParams);
+        if(project.iconUrl!=null&&!project.iconUrl.isEmpty()){
+            ImageView icon=new ImageView(this);icon.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            hero.addView(icon,new LinearLayout.LayoutParams(dp(92),dp(92)));imageLoader.load(project.iconUrl,icon,Color.rgb(28,43,72));
+        }
+        LinearLayout heading=new LinearLayout(this);heading.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams headingParams=new LinearLayout.LayoutParams(0,-2,1);headingParams.leftMargin=dp(14);hero.addView(heading,headingParams);
+        heading.addView(text(project.title,23,TEXT,true));
+        heading.addView(text(project.author.isEmpty()?"Autor por consultar":"Por "+project.author,13,BLUE,true));
+        heading.addView(text(formatDownloads(project.downloads)+" descargas",11,MUTED,false));
+        card("Descripción",project.description);
+        LinearLayout info=new LinearLayout(this);info.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams infoParams=match();infoParams.bottomMargin=dp(12);content.addView(info,infoParams);
+        info.addView(text("Dependencias",18,TEXT,true));
+        info.addView(text("Consultando requisitos y autores…",13,MUTED,false));
+        LinearLayout bodySection=new LinearLayout(this);bodySection.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams bodySectionParams=match();bodySectionParams.bottomMargin=dp(12);content.addView(bodySection,bodySectionParams);
+        LinearLayout gallery=new LinearLayout(this);gallery.setOrientation(LinearLayout.VERTICAL);
+        content.addView(gallery,match());
+        modrinth.getProject(project.id,(details,error)->runOnUiThread(()->{
+            if(isFinishing()||isDestroyed())return;
+            info.removeAllViews();gallery.removeAllViews();
+            if(error!=null){info.addView(text("No se pudieron cargar los detalles completos: "+error,13,MUTED,false));return;}
+            String authors=details.authors.isEmpty()?(project.author.isEmpty()?"Autor no especificado":project.author):android.text.TextUtils.join(", ",details.authors);
+            info.addView(text("Autor(es): "+authors,13,BLUE,true));
+            info.addView(text("Dependencias",18,TEXT,true));
+            if(details.dependencies.isEmpty())info.addView(text("No requiere dependencias declaradas.",13,MUTED,false));
+            else for(ModrinthClient.Dependency dep:details.dependencies){
+                String requirement=dep.isRequired()?"Obligatoria":"Opcional";
+                info.addView(text("• "+(dep.title.isEmpty()?dep.projectId:dep.title)+" · "+requirement,13,MUTED,false));
+            }
+            if(!details.body.trim().isEmpty()){
+                bodySection.addView(text("Información del proyecto",18,TEXT,true));
+                TextView bodyText=text(details.body,13,MUTED,false);
+                LinearLayout.LayoutParams bodyTextParams=match();bodyTextParams.topMargin=dp(7);bodySection.addView(bodyText,bodyTextParams);
+            }
+            if(!details.gallery.isEmpty()){
+                gallery.addView(text("Imágenes del proyecto",18,TEXT,true));
+                for(ModrinthClient.GalleryImage image:details.gallery){
+                    ImageView picture=new ImageView(this);picture.setAdjustViewBounds(true);picture.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                    LinearLayout.LayoutParams p=match();p.topMargin=dp(10);gallery.addView(picture,p);
+                    imageLoader.load(image.url,picture,Color.rgb(18,29,52));
+                    if(!image.title.isEmpty())gallery.addView(text(image.title,12,MUTED,false));
+                }
+            }
+        }));
+        Button official=button("Abrir página oficial de Modrinth ↗");
+        LinearLayout.LayoutParams officialParams=match();officialParams.topMargin=dp(12);content.addView(official,officialParams);
+        official.setOnClickListener(v->openProject(project.slug));
     }
 
     private void openProject(String slug) {
-        if (slug == null || !slug.matches("[A-Za-z0-9_-]+")) {
-            Toast.makeText(this, "Este proyecto no tiene un enlace válido.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://modrinth.com/project/" + slug));
-        try {
-            startActivity(intent);
-        } catch (Exception error) {
-            Toast.makeText(this, "No se encontró una aplicación para abrir el enlace.", Toast.LENGTH_SHORT).show();
-        }
+        if(slug==null||!slug.matches("[A-Za-z0-9_-]+")){Toast.makeText(this,"Este proyecto no tiene un enlace válido.",Toast.LENGTH_SHORT).show();return;}
+        Intent intent=new Intent(Intent.ACTION_VIEW,Uri.parse("https://modrinth.com/project/"+slug));
+        try{startActivity(intent);}catch(Exception error){Toast.makeText(this,"No se encontró una aplicación para abrir el enlace.",Toast.LENGTH_SHORT).show();}
     }
 
     private void showAccounts() {
