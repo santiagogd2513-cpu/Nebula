@@ -39,6 +39,7 @@ public final class MainActivity extends Activity {
     private static final String KEY_VERSION = "minecraft_version";
     private static final String KEY_LOADER = "minecraft_loader";
     private static final String KEY_LOCAL_NAMES = "local_account_names";
+    private static final String KEY_ACTIVE_NAME = "active_local_account";
 
     private LinearLayout content;
     private final ModrinthClient modrinth = new ModrinthClient();
@@ -107,7 +108,9 @@ public final class MainActivity extends Activity {
         runtimeParams.topMargin = dp(8);
         content.addView(runtime, runtimeParams);
         card("Biblioteca", "Explora mods, modpacks, shaders y paquetes de recursos en Modrinth.");
-        card("Cuentas", "Puedes crear y conservar perfiles locales sin conexión. El acceso Microsoft y Ely.by sigue pendiente.");
+        String activeName = preferences.getString(KEY_ACTIVE_NAME, "");
+        card("Perfil seleccionado", activeName.isEmpty() ? "Todavía no has seleccionado un perfil local." : activeName + " · Perfil local sin autenticación en línea.");
+        card("Cuentas", "Puedes crear, seleccionar y conservar perfiles locales sin conexión. El acceso Microsoft y Ely.by sigue pendiente.");
         card("Tu configuración", "Minecraft " + selectedVersion() + " · " + selectedLoaderLabel());
     }
 
@@ -243,7 +246,9 @@ public final class MainActivity extends Activity {
                 AccountSession session = new LocalAccountProvider().create(name);
                 Set<String> names = new TreeSet<>(preferences.getStringSet(KEY_LOCAL_NAMES, Collections.emptySet()));
                 names.add(session.getPlayerName());
-                preferences.edit().putStringSet(KEY_LOCAL_NAMES, names).apply();
+                SharedPreferences.Editor editor = preferences.edit().putStringSet(KEY_LOCAL_NAMES, names);
+                if (preferences.getString(KEY_ACTIVE_NAME, "").isEmpty()) editor.putString(KEY_ACTIVE_NAME, session.getPlayerName());
+                editor.apply();
                 playerName.setText("");
                 renderLocalProfiles(profiles);
                 Toast.makeText(this, "Perfil local añadido.", Toast.LENGTH_SHORT).show();
@@ -273,15 +278,24 @@ public final class MainActivity extends Activity {
             bg.setColor(PANEL);
             bg.setCornerRadius(dp(12));
             row.setBackground(bg);
-            TextView label = text(name + "  ·  Local", 14, TEXT, true);
+            boolean active = name.equals(preferences.getString(KEY_ACTIVE_NAME, ""));
+            TextView label = text(name + (active ? "  ·  Seleccionado" : "  ·  Local"), 14, active ? BLUE : TEXT, true);
             row.addView(label, new LinearLayout.LayoutParams(0, -2, 1));
+            row.setOnClickListener(v -> {
+                preferences.edit().putString(KEY_ACTIVE_NAME, name).apply();
+                renderLocalProfiles(target);
+            });
             Button remove = button("Quitar");
             remove.setTextSize(11);
             row.addView(remove, new LinearLayout.LayoutParams(-2, dp(42)));
             remove.setOnClickListener(v -> {
                 Set<String> updated = new TreeSet<>(preferences.getStringSet(KEY_LOCAL_NAMES, Collections.emptySet()));
                 updated.remove(name);
-                preferences.edit().putStringSet(KEY_LOCAL_NAMES, updated).apply();
+                SharedPreferences.Editor editor = preferences.edit().putStringSet(KEY_LOCAL_NAMES, updated);
+                if (name.equals(preferences.getString(KEY_ACTIVE_NAME, ""))) {
+                    editor.putString(KEY_ACTIVE_NAME, updated.isEmpty() ? "" : updated.iterator().next());
+                }
+                editor.apply();
                 renderLocalProfiles(target);
             });
             LinearLayout.LayoutParams rowParams = match();
