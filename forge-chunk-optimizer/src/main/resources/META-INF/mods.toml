@@ -1,0 +1,26 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+
+[[mods]]
+modId="nebula_chunk_optimizer"
+version="1.0.0"
+displayName="Nebula Chunk Optimizer"
+authors="Nebula"
+description='''
+Conservative server-side chunk prefetch for Minecraft 1.20.1 Forge.
+'''
+
+[[dependencies.nebula_chunk_optimizer]]
+modId="forge"
+mandatory=true
+versionRange="[47.4.5,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.nebula_chunk_optimizer]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.21)"
+ordering="NONE"
+side="BOTH"

@@ -1,0 +1,58 @@
+name: Build Nebula Chunk Optimizer (Forge 1.20.1)
+
+on:
+  push:
+    paths:
+      - 'forge-chunk-optimizer/**'
+      - '.github/workflows/forge-chunk-optimizer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nebula-forge-chunk-optimizer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: forge-chunk-optimizer
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+      - name: Validate source and metadata files
+        run: |
+          test -s build.gradle
+          test -s src/main/resources/META-INF/mods.toml
+          test -s src/main/java/com/nebula/chunkoptimizer/ChunkPrefetchHandler.java
+      - name: Run unit tests and compile reobfuscated mod
+        run: gradle --no-daemon clean test build
+      - name: Verify JAR and checksum
+        run: |
+          JAR="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | head -n 1)"
+          test -n "$JAR"
+          test -s "$JAR"
+          jar tf "$JAR" | grep -q 'META-INF/mods.toml'
+          sha256sum "$JAR" > "$JAR.sha256"
+          mkdir -p ../dist
+          cp "$JAR" "$JAR.sha256" ../dist/
+      - name: Upload downloadable JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: nebula-chunk-optimizer-forge-1.20.1
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
