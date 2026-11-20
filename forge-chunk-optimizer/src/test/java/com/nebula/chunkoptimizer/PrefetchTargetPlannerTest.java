@@ -13,7 +13,7 @@ public class PrefetchTargetPlannerTest {
 
     @Test
     public void plansAheadDiagonally() {
-        assertArrayEquals(new int[] {7, 9}, PrefetchTargetPlanner.targetChunk(5, 7, -0.4D, 0.2D, 2));
+        assertArrayEquals(new int[] {3, 9}, PrefetchTargetPlanner.targetChunk(5, 7, -0.4D, 0.2D, 2));
     }
 
     @Test
